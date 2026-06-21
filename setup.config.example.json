@@ -1,0 +1,15 @@
+{
+  "_comment": "Copy this file to setup.config.json (gitignored) and fill it in per client, then run: npm run setup",
+  "vercelProjectName": "client-name",
+  "githubRepo": "https://github.com/your-org/client-name",
+  "superAdminEmail": "devsite350@gmail.com",
+  "firestoreRegion": "eur3",
+  "firebase": {
+    "apiKey": "",
+    "authDomain": "<projectId>.firebaseapp.com",
+    "projectId": "",
+    "storageBucket": "<projectId>.firebasestorage.app",
+    "messagingSenderId": "",
+    "appId": ""
+  }
+}

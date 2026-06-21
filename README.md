@@ -48,7 +48,10 @@ vercel dev
 
 ## פריסה
 
-מדריך הקמה ופריסה מלא (Firebase + Google Cloud + Resend + Vercel) נמצא בקובץ
+הקמת לקוח חדש מהתבנית (ברובה אוטומטית, `npm run setup`) — ראה
+**[TEMPLATE_SETUP.md](./TEMPLATE_SETUP.md)**.
+
+מדריך הקמה ופריסה ידני ומפורט (Firebase + Google Cloud + Resend + Vercel) נמצא בקובץ
 **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
 
 ## מבנה התיקיות

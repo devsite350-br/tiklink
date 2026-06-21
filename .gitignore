@@ -26,6 +26,12 @@ dist-ssr
 # Firebase project config (unique per client)
 .firebaserc
 
+# Per-client setup config (contains the Firebase web config — fill from the example)
+setup.config.json
+
 .vercel
 
 .claude/
+
+.vercel
+.env*
