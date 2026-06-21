@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Config collection: stores owner UID. Public read (not sensitive — uid only).
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    // User profile. A user may read any profile (needed to resolve team owner /
+    // member display data) but only write their own. The server (Admin SDK)
+    // bypasses these rules for all backend operations.
+    match /users/{userId} {
+      allow get: if request.auth != null;
+      allow list: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email == 'devsite350@gmail.com'
+      );
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Team members — allow a user to join (create own membership doc) and the
+    // owner or the member to read/remove it.
+    match /users/{userId}/team_members/{memberId} {
+      allow create: if request.auth != null && request.auth.uid == memberId;
+      allow delete: if request.auth != null && (request.auth.uid == userId || request.auth.uid == memberId);
+      allow read: if request.auth != null && (request.auth.uid == userId || request.auth.uid == memberId);
+    }
+
+    // Public document access — collectionGroup queries and public signing.
+    match /users/{userId}/documents/{docId} {
+      allow read: if true;
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['status', 'signedAt', 'signatureDataUrl', 'signerName']);
+    }
+
+    // Public read access to clients and customFields for dynamic field resolution
+    // on public document pages.
+    match /users/{userId}/clients/{clientId} {
+      allow read: if true;
+    }
+    match /users/{userId}/customFields/{fieldId} {
+      allow read: if true;
+    }
+
+    // General data access: the owner, a team member, or the super admin.
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == userId ||
+        exists(/databases/$(database)/documents/users/$(userId)/team_members/$(request.auth.uid)) ||
+        request.auth.token.email == 'devsite350@gmail.com'
+      );
+    }
+  }
+}

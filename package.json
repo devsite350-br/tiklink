@@ -1,0 +1,41 @@
+{
+  "name": "simpofy-crm-standalone",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "rules:deploy": "firebase deploy --only firestore:rules"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@google/generative-ai": "^0.24.1",
+    "@vercel/blob": "^2.4.1",
+    "firebase": "^12.8.0",
+    "firebase-admin": "^12.7.0",
+    "googleapis": "^171.4.0",
+    "lucide-react": "^1.17.0",
+    "mobile-drag-drop": "^3.0.0-rc.0",
+    "nodemailer": "^6.9.16",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.8.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/node": "^22.14.0",
+    "@types/nodemailer": "^6.4.17",
+    "@vercel/node": "^3.2.24",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.23",
+    "firebase-tools": "^13.31.1",
+    "sharp": "^0.34.5",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "vite-plugin-pwa": "^1.2.0"
+  }
+}
