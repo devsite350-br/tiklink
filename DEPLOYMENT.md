@@ -117,6 +117,7 @@ Resend משמש כברירת מחדל כשהמשתמש לא חיבר Gmail/SMTP.
    | `VITE_FIREBASE_MESSAGING_SENDER_ID` | Public | מ-Firebase Web config |
    | `VITE_FIREBASE_APP_ID` | Public | מ-Firebase Web config |
    | `VITE_WEBHOOK_SECRET` | Public | זהה ל-`WEBHOOK_SECRET` (אופציונלי) |
+   | `VITE_SUPER_ADMIN_EMAIL` | Public | אימייל הסופר-אדמין (מסך ניהול + impersonation). זהה לאימייל ב-`firestore.rules` |
    | `FIREBASE_SERVICE_ACCOUNT` | Secret | ה-JSON ב-base64 (שלב 1.5) |
    | `GOOGLE_OAUTH_CLIENT_ID` | Secret | שלב 2 |
    | `GOOGLE_OAUTH_CLIENT_SECRET` | Secret | שלב 2 |
