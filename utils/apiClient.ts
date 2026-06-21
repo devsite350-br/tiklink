@@ -2,7 +2,7 @@
 // Every request carries the current user's Firebase ID token as a Bearer token,
 // which the API verifies with admin.auth().verifyIdToken().
 import { auth } from '../firebaseConfig';
-import { uploadPresigned } from '@vercel/blob/client';
+import { upload } from '@vercel/blob/client';
 
 // Optional API base (defaults to relative — same Vercel deployment).
 const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '');
@@ -44,7 +44,7 @@ export function webhookUrl(path: string, params: Record<string, string>): string
 export async function uploadFile(file: File, prefix: string): Promise<string> {
   const token = await auth.currentUser?.getIdToken();
   const pathname = `${prefix}/${Date.now()}_${file.name}`;
-  const result = await uploadPresigned(pathname, file, {
+  const result = await upload(pathname, file, {
     access: 'public',
     handleUploadUrl: `${API_BASE}/api/upload`,
     clientPayload: token || '',

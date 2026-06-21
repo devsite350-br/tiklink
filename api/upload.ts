@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { issueSignedToken } from '@vercel/blob';
-import { handleUploadPresigned, type HandleUploadPresignedBody } from '@vercel/blob/client';
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { adminAuth } from './_lib/admin';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -9,24 +8,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const body = req.body as HandleUploadPresignedBody;
+  const body = req.body as HandleUploadBody;
   try {
-    const jsonResponse = await handleUploadPresigned({
+    const jsonResponse = await handleUpload({
       body,
       request: req as any,
-      getSignedToken: async (pathname, clientPayload) => {
+      onBeforeGenerateToken: async (_pathname, clientPayload) => {
+        // The Firebase ID token is passed from the client as the clientPayload.
         const firebaseToken = clientPayload || '';
         await adminAuth.verifyIdToken(firebaseToken);
-        const signedToken = await issueSignedToken({
-          pathname,
-          operations: ['put'],
+        return {
           allowedContentTypes: [
             'image/jpeg', 'image/png', 'image/gif', 'image/webp',
             'image/svg+xml', 'application/pdf',
           ],
           maximumSizeInBytes: 10 * 1024 * 1024,
-        });
-        return { token: signedToken };
+        };
       },
       onUploadCompleted: async () => {},
     });
