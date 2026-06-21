@@ -67,21 +67,22 @@ function gcloudToken() {
   return sh('gcloud auth print-access-token').trim();
 }
 
-// Identity Toolkit admin API needs a quota-project header.
-async function identityToolkit(projectId, method, body) {
-  const res = await fetch(
+// Identity Toolkit admin API needs a quota-project header. The updateMask MUST
+// match the body — fields listed in the mask but absent from the body get
+// cleared — so each PATCH passes its own mask.
+async function identityToolkit(projectId, method, { body, mask } = {}) {
+  const url =
     `https://identitytoolkit.googleapis.com/admin/v2/projects/${projectId}/config` +
-      (method === 'PATCH' ? '?updateMask=authorizedDomains,signIn.email.enabled,signIn.email.passwordRequired' : ''),
-    {
-      method,
-      headers: {
-        Authorization: `Bearer ${gcloudToken()}`,
-        'x-goog-user-project': projectId,
-        'Content-Type': 'application/json',
-      },
-      body: body ? JSON.stringify(body) : undefined,
+    (method === 'PATCH' && mask ? `?updateMask=${encodeURIComponent(mask)}` : '');
+  const res = await fetch(url, {
+    method,
+    headers: {
+      Authorization: `Bearer ${gcloudToken()}`,
+      'x-goog-user-project': projectId,
+      'Content-Type': 'application/json',
     },
-  );
+    body: body ? JSON.stringify(body) : undefined,
+  });
   const json = await res.json();
   if (!res.ok) throw new Error(json?.error?.message || `HTTP ${res.status}`);
   return json;
@@ -184,7 +185,8 @@ ok(`key generated from ${saEmail} and stored (base64)`);
 step(7, 'Enabling Email/Password sign-in provider');
 try {
   await identityToolkit(PROJECT_ID, 'PATCH', {
-    signIn: { email: { enabled: true, passwordRequired: true } },
+    body: { signIn: { email: { enabled: true, passwordRequired: true } } },
+    mask: 'signIn.email.enabled,signIn.email.passwordRequired',
   });
   ok('enabled');
 } catch (e) {
@@ -211,7 +213,10 @@ if (prodDomain) {
     const conf = await identityToolkit(PROJECT_ID, 'GET');
     const domains = new Set(conf.authorizedDomains || ['localhost', `${PROJECT_ID}.firebaseapp.com`, `${PROJECT_ID}.web.app`]);
     domains.add(prodDomain);
-    await identityToolkit(PROJECT_ID, 'PATCH', { authorizedDomains: [...domains] });
+    await identityToolkit(PROJECT_ID, 'PATCH', {
+      body: { authorizedDomains: [...domains] },
+      mask: 'authorizedDomains',
+    });
     ok(`authorized: ${prodDomain}`);
   } catch (e) {
     warn(`could not add automatically (${e.message}). Add "${prodDomain}" under Firebase Console -> Authentication -> Settings -> Authorized domains.`);
