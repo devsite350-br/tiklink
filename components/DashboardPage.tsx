@@ -9,14 +9,12 @@ import { StatusDistributionChart } from './dashboard/StatusDistributionChart';
 import { UserDistributionChart } from './dashboard/UserDistributionChart';
 import { TodayTasksWidget } from './dashboard/TodayTasksWidget';
 import { TodayMeetingsWidget } from './dashboard/TodayMeetingsWidget';
-import { TaskTimeDistributionChart } from './dashboard/TaskTimeDistributionChart';
 
 interface DashboardWidgetVisibility {
     statusChart: boolean;
     userChart: boolean;
     todayTasks: boolean;
     todayMeetings: boolean;
-    taskTimeChart?: boolean;
 }
 
 const DEFAULT_WIDGET_VISIBILITY: DashboardWidgetVisibility = {
@@ -24,14 +22,12 @@ const DEFAULT_WIDGET_VISIBILITY: DashboardWidgetVisibility = {
     userChart: true,
     todayTasks: true,
     todayMeetings: true,
-    taskTimeChart: true,
 };
 
 const WIDGET_LABELS: { key: keyof DashboardWidgetVisibility; label: string }[] = [
     { key: 'statusChart', label: 'התפלגות לפי סטטוס' },
     { key: 'userChart', label: 'התפלגות לפי משתמש' },
     { key: 'todayTasks', label: 'משימות להיום' },
-    { key: 'taskTimeChart', label: 'התפלגות משימות לפי זמן' },
 ];
 
 interface DashboardPageProps {
@@ -39,7 +35,7 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onClientClick }) => {
-    const { clients, statuses, meetings, teamMembers, labelMap, visibilitySettings, entityLabels } = useAppContext();
+    const { clients, statuses, meetings, teamMembers, visibilitySettings, entityLabels } = useAppContext();
 
     // Widget visibility
     const [widgetVisibility, setWidgetVisibility] = useLocalStorage<DashboardWidgetVisibility>(
@@ -113,34 +109,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onClientClick }) =
 
         return result;
     }, [chartClients, teamMembers]);
-
-    // Task time distribution tasks (enriched with clientName)
-    const timeChartTasks = useMemo(() => {
-        const result: (Task & { clientName: string })[] = [];
-        clients.forEach(client => {
-            client.tasks.forEach(task => {
-                const time = Number(task.totalTime) || 0;
-                if (time > 0 && task.text) {
-                    let taskDate = task.createdAt;
-                    if (!taskDate) {
-                        const parts = task.id.split('_');
-                        if (parts.length >= 2) {
-                            const parsed = parseInt(parts[1], 10);
-                            if (!isNaN(parsed) && parsed > 1000000000000) {
-                                taskDate = parsed;
-                            }
-                        }
-                    }
-                    if (!taskDate) taskDate = client.createdAt || 0;
-
-                    if (taskDate >= dateRange.from && taskDate <= dateRange.to) {
-                        result.push({ ...task, clientName: client.id === UNASSOCIATED_CLIENT_ID ? entityLabels.withoutEntity : client.name });
-                    }
-                }
-            });
-        });
-        return result;
-    }, [clients, dateRange]);
 
     // Today's tasks
     const todayTasks = useMemo(() => {
@@ -265,11 +233,6 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onClientClick }) =
                             {widgetVisibility.userChart && (
                                 <DashboardWidgetWrapper title={`התפלגות ${entityLabels.plural} לפי משתמש`}>
                                     <UserDistributionChart data={userDistribution} />
-                                </DashboardWidgetWrapper>
-                            )}
-                            {visibilitySettings.tasks?.enableTimeTracking !== false && (widgetVisibility.taskTimeChart ?? true) && (
-                                <DashboardWidgetWrapper title="התפלגות משימות לפי זמן">
-                                    <TaskTimeDistributionChart tasks={timeChartTasks} labelMap={labelMap} />
                                 </DashboardWidgetWrapper>
                             )}
                             {widgetVisibility.todayTasks && (

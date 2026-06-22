@@ -44,9 +44,6 @@ export interface Task {
   text: string;
   isCompleted: boolean;
   priority?: TaskPriority;
-  totalTime?: number; // accumulated time in milliseconds
-  isRunning?: boolean; // is the timer currently active
-  startTime?: number; // timestamp when the timer was started
   labelIds?: string[];
   dueDate?: string; // ISO date string (YYYY-MM-DD)
   createdAt?: number; // timestamp when the task was created
@@ -111,7 +108,6 @@ export interface ModuleVisibility {
   showInGrid: boolean;
   showInList: boolean;
   showInCard: boolean;
-  enableTimeTracking?: boolean;
 }
 
 export interface Meeting {
@@ -191,7 +187,7 @@ export interface VisibilitySettings {
 
 export const DEFAULT_VISIBILITY_SETTINGS: VisibilitySettings = {
   statuses: { enabled: true, showInGrid: true, showInList: true, showInCard: true },
-  tasks: { enabled: true, showInGrid: false, showInList: false, showInCard: true, enableTimeTracking: true },
+  tasks: { enabled: true, showInGrid: false, showInList: false, showInCard: true },
   labels: { enabled: true, showInGrid: true, showInList: true, showInCard: true },
   leadSources: { enabled: true, showInGrid: true, showInList: true, showInCard: true },
   users: { enabled: true, showInGrid: true, showInList: true, showInCard: true },

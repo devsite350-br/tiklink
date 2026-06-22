@@ -61,11 +61,10 @@ const TaskKanbanCard: React.FC<{
     onCardClick: () => void;
     onClientClick: (client: Client) => void;
 }> = ({ task, client, onCardClick, onClientClick }) => {
-    const { labelMap, effectiveUserId } = useAppContext();
+    const { effectiveUserId } = useAppContext();
     const isChecklistTask = Array.isArray(task.subtasks) && task.subtasks.length > 0;
     const subtasksDone = isChecklistTask ? (task.subtasks || []).filter(s => s.isCompleted).length : 0;
     const subtasksTotal = isChecklistTask ? (task.subtasks || []).length : 0;
-    const taskLabels = (task.labelIds || []).map(id => labelMap.get(id)).filter(Boolean);
     const overdue = isTaskOverdue(task);
 
     const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
@@ -85,18 +84,6 @@ const TaskKanbanCard: React.FC<{
             className="group bg-white dark:bg-base-900 p-3 rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border border-gray-100 dark:border-white/5 cursor-grab active:cursor-grabbing border-r-4"
             style={{ borderRightColor: borderColor }}
         >
-            {/* Labels */}
-            {taskLabels.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-2">
-                    {taskLabels.map(label => label && (
-                        <span key={label.id} className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                            style={{ backgroundColor: label.color, color: isColorLight(label.color) ? '#000' : '#FFF' }}>
-                            {label.name}
-                        </span>
-                    ))}
-                </div>
-            )}
-
             {/* Task text */}
             <div className="text-sm text-gray-800 dark:text-gray-200 mb-2 line-clamp-3">
                 <span className={task.isCompleted ? 'line-through text-gray-400' : ''}>

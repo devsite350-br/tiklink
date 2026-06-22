@@ -139,9 +139,6 @@ const DEFAULT_LABELS: Omit<LabelDefinition, 'id'>[] = [
   // Client Tags
   { name: 'שירות', color: '#33E0FF', module: 'client' }, // Cyan
   { name: 'מכירות', color: '#8833FF', module: 'client' }, // Purple
-  // Task Tags
-  { name: 'דחוף מאוד', color: '#FF3333', module: 'task' }, // Red
-  { name: 'לטיפול בהמשך', color: '#33AAFF', module: 'task' }, // Blue
 ];
 
 const DEFAULT_FIELDS: Omit<CustomFieldDefinition, 'id' | 'order'>[] = [

@@ -4,10 +4,9 @@ import { useAppContext } from '../context/AppContext';
 import { Client, Task, TaskPriority, UNASSOCIATED_CLIENT_ID } from '../types';
 import LinkifiedContent from './LinkifiedContent';
 import { Modal } from './Modal';
-import { LabelSelector } from './LabelSelector';
 import { TaskDetailModal } from './TaskDetailModal';
 import { BulkTaskModal } from './BulkTaskModal';
-import { ChevronRight, ArrowDownNarrowWide, ArrowUpNarrowWide, Calendar, ChevronDown, ChevronUp, ClipboardCheck, Filter, Search, Plus, ListChecks, ExternalLink, Minus, Check, X, Pencil, Trash2, List, Columns3, SortDesc, SortAsc, LayoutGrid } from 'lucide-react';
+import { ChevronRight, ArrowDownNarrowWide, ArrowUpNarrowWide, Calendar, ChevronDown, ChevronUp, ClipboardCheck, Filter, Search, Plus, ListChecks, ExternalLink, Check, X, Pencil, Trash2, List, Columns3, SortDesc, SortAsc } from 'lucide-react';
 import { TaskKanbanBoard } from './TaskKanbanBoard';
 
 interface TasksPageProps {
@@ -20,18 +19,8 @@ const generateId = () => {
     return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
-const isColorLight = (hexColor: string) => {
-    const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
-    const r = parseInt(color.substring(0, 2), 16);
-    const g = parseInt(color.substring(2, 4), 16);
-    const b = parseInt(color.substring(4, 6), 16);
-    return (((r * 0.299) + (g * 0.587) + (b * 0.114)) > 186);
-};
-
-import { TimeInput, formatTime, parseTime } from './TimeInput';
-
 export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSidebarOpen, onCloseMobileSidebar }) => {
-    const { clients, updateClient, labelMap, visibilitySettings, effectiveUserId, entityLabels } = useAppContext();
+    const { clients, updateClient, effectiveUserId, entityLabels } = useAppContext();
     const clientsRef = useRef<Client[]>(clients);
 
     useEffect(() => {
@@ -53,13 +42,11 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [editingTaskText, setEditingTaskText] = useState('');
     const [editingTaskClientId, setEditingTaskClientId] = useState<string>('');
-    const [editingTaskLabelIds, setEditingTaskLabelIds] = useState<string[]>([]);
     const [editingTaskDueDate, setEditingTaskDueDate] = useState<string>('');
 
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [newTaskText, setNewTaskText] = useState('');
     const [newTaskClientId, setNewTaskClientId] = useState<string>('');
-    const [newTaskLabelIds, setNewTaskLabelIds] = useState<string[]>([]);
     const [newTaskDueDate, setNewTaskDueDate] = useState<string>('');
     const [detailTask, setDetailTask] = useState<{ taskId: string; originalClientId: string; currentClientId: string } | null>(null);
 
@@ -197,11 +184,9 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
             tasks = tasks.filter(({ task, client }) => {
                 const taskText = task.text.toLowerCase();
                 const clientName = client.name.toLowerCase();
-                const labelNames = (task.labelIds || []).map(id => labelMap.get(id)?.name.toLowerCase() || '');
 
                 return taskText.includes(lowerTerm) ||
-                    clientName.includes(lowerTerm) ||
-                    labelNames.some(name => name.includes(lowerTerm));
+                    clientName.includes(lowerTerm);
             });
         }
 
@@ -228,7 +213,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
 
             return sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
         });
-    }, [allTasks, selectedClientId, searchTerm, sortDirection, sortField, labelMap]);
+    }, [allTasks, selectedClientId, searchTerm, sortDirection, sortField]);
 
     const handleTaskToggle = async (clientId: string, taskId: string) => {
         const client = clientsRef.current.find(c => c.id === clientId);
@@ -249,7 +234,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
         setEditingTaskId(task.id);
         setEditingTaskText(task.text);
         setEditingTaskClientId(clientId);
-        setEditingTaskLabelIds(task.labelIds || []);
         setEditingTaskDueDate(task.dueDate || '');
     };
 
@@ -268,7 +252,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
             if (originalClientId === editingTaskClientId) {
                 const client = clientsRef.current.find(c => c.id === originalClientId);
                 if (!client) return;
-                const updatedTasks = client.tasks.map(t => t.id === taskId ? { ...t, text: editingTaskText.trim(), labelIds: editingTaskLabelIds, dueDate: editingTaskDueDate || undefined } : t);
+                const updatedTasks = client.tasks.map(t => t.id === taskId ? { ...t, text: editingTaskText.trim(), dueDate: editingTaskDueDate || undefined } : t);
                 const updatedClient = { ...client, tasks: updatedTasks };
                 clientsRef.current = clientsRef.current.map(c => c.id === originalClientId ? updatedClient : c);
                 await updateClient(updatedClient);
@@ -297,7 +281,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                         const updatedOriginalClient = { ...originalClient, tasks: updatedOriginalTasks };
 
                         // Add to new
-                        const updatedTask = { ...taskToMove, text: editingTaskText.trim(), labelIds: editingTaskLabelIds, dueDate: editingTaskDueDate || undefined };
+                        const updatedTask = { ...taskToMove, text: editingTaskText.trim(), dueDate: editingTaskDueDate || undefined };
                         const newTasksArray = newClient.tasks || [];
                         const updatedNewClient = { ...newClient, tasks: [...newTasksArray, updatedTask] };
 
@@ -351,9 +335,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                     id: generateId(),
                     text: newTaskText.trim(),
                     isCompleted: false,
-                    isRunning: false,
                     priority: 'medium',
-                    labelIds: newTaskLabelIds,
                     dueDate: newTaskDueDate || undefined,
                     createdAt: Date.now()
                 };
@@ -371,7 +353,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                 await updateClient(updatedClient);
                 console.log("Client updated successfully.");
                 setNewTaskText('');
-                setNewTaskLabelIds([]);
                 setNewTaskDueDate('');
                 setAddModalOpen(false);
             } else {
@@ -414,7 +395,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                 id: generateId(),
                 text: title,
                 isCompleted: false,
-                isRunning: false,
                 priority: 'medium',
                 createdAt: Date.now(),
                 subtasks: subtasks.length > 0 ? subtasks : [],
@@ -441,38 +421,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
         const client = clientsRef.current.find(c => c.id === clientId);
         if (!client) return;
         const updatedTasks = client.tasks.filter(t => t.id !== taskId);
-        const updatedClient = { ...client, tasks: updatedTasks };
-        clientsRef.current = clientsRef.current.map(c => c.id === clientId ? updatedClient : c);
-        await updateClient(updatedClient);
-    };
-
-    const handleManualTimeChange = async (clientId: string, taskId: string, newTotalTime: number) => {
-        const client = clientsRef.current.find(c => c.id === clientId);
-        if (!client) return;
-
-        const updatedTasks = client.tasks.map(task =>
-            task.id === taskId ? { ...task, totalTime: newTotalTime } : task
-        );
-
-        const updatedClient = { ...client, tasks: updatedTasks };
-        clientsRef.current = clientsRef.current.map(c => c.id === clientId ? updatedClient : c);
-        await updateClient(updatedClient);
-    };
-
-    const handleTimeAdjustment = async (clientId: string, taskId: string, adjustmentMs: number) => {
-        const client = clientsRef.current.find(c => c.id === clientId);
-        if (!client) return;
-
-        const updatedTasks = client.tasks.map(task => {
-            if (task.id === taskId) {
-                const currentTotal = Number(task.totalTime) || 0;
-                let newTotalTime = currentTotal + adjustmentMs;
-                if (newTotalTime < 0) newTotalTime = 0;
-                return { ...task, totalTime: newTotalTime };
-            }
-            return task;
-        });
-
         const updatedClient = { ...client, tasks: updatedTasks };
         clientsRef.current = clientsRef.current.map(c => c.id === clientId ? updatedClient : c);
         await updateClient(updatedClient);
@@ -544,19 +492,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
         // Modal stays open; live data flows from the realtime clients context
     };
 
-    const handleInlineLabelChange = async (clientId: string, taskId: string, newLabelIds: string[]) => {
-        const client = clientsRef.current.find(c => c.id === clientId);
-        if (!client) return;
-
-        const updatedTasks = client.tasks.map(task =>
-            task.id === taskId ? { ...task, labelIds: newLabelIds } : task
-        );
-
-        const updatedClient = { ...client, tasks: updatedTasks };
-        clientsRef.current = clientsRef.current.map(c => c.id === clientId ? updatedClient : c);
-        await updateClient(updatedClient);
-    };
-
     const handleKanbanDrop = async (clientId: string, taskId: string, targetColumn: string) => {
         const client = clientsRef.current.find(c => c.id === clientId);
         if (!client) return;
@@ -589,7 +524,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder={`חיפוש משימה, ${entityLabels.singular} או תגית...`}
+                            placeholder={`חיפוש משימה או ${entityLabels.singular}...`}
                             autoFocus
                             className="flex-1 bg-gray-100 dark:bg-gray-700 border-transparent focus:border-transparent focus:ring-0 rounded-lg px-4 py-2 text-base w-full"
                         />
@@ -838,7 +773,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                             <button
                                 onClick={() => {
                                     setNewTaskClientId(selectedClientId || UNASSOCIATED_CLIENT_ID);
-                                    setNewTaskLabelIds([]);
                                     setAddModalOpen(true);
                                 }}
                                 className="hidden sm:flex items-center gap-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all"
@@ -854,7 +788,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
             <button
                 onClick={() => {
                     setNewTaskClientId(selectedClientId || UNASSOCIATED_CLIENT_ID);
-                    setNewTaskLabelIds([]);
                     setAddModalOpen(true);
                 }}
                 className="sm:hidden fixed bottom-6 left-6 z-40 w-14 h-14 bg-primary text-white rounded-full shadow-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
@@ -925,9 +858,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                                     {isEditing ? (
                                         <div className="flex items-center gap-2">
                                             <input type="text" value={editingTaskText} onChange={e => setEditingTaskText(e.target.value)} className="form-input flex-1 rounded-md dark:bg-gray-800 dark:border-gray-600" autoFocus onKeyDown={e => e.key === 'Enter' && handleEditSave(client.id, task.id)} />
-                                            <div className="flex-shrink-0 w-48">
-                                                <LabelSelector selectedLabelIds={editingTaskLabelIds} onChange={setEditingTaskLabelIds} module="task" />
-                                            </div>
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-3">
@@ -944,9 +874,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                                                         ({subtasksDone}/{subtasksTotal})
                                                     </span>
                                                 )}
-                                            </div>
-                                            <div className="flex-shrink-0">
-                                                <LabelSelector selectedLabelIds={task.labelIds || []} onChange={(newLabelIds) => handleInlineLabelChange(client.id, task.id, newLabelIds)} module="task" />
                                             </div>
                                         </div>
                                     )}
@@ -1052,31 +979,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    {/* Time */}
-                                    {(visibilitySettings.tasks.enableTimeTracking ?? true) && (
-                                        <div className="flex items-center gap-1 group">
-                                            <button
-                                                onClick={() => handleTimeAdjustment(client.id, task.id, -5 * 60 * 1000)}
-                                                className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                                title="הפחת 5 דקות"
-                                            >
-                                                <Minus className="w-3.5 h-3.5" />
-                                            </button>
-                                            <TimeInput
-                                                valueMs={Number(task.totalTime) || 0}
-                                                onChange={(val) => handleManualTimeChange(client.id, task.id, val)}
-                                                className="font-mono text-sm w-[60px] text-center bg-transparent border border-transparent hover:border-gray-300 rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
-                                            />
-                                            <button
-                                                onClick={() => handleTimeAdjustment(client.id, task.id, 5 * 60 * 1000)}
-                                                className="text-gray-300 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                                title="הוסף 5 דקות"
-                                            >
-                                                <Plus className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    )}
-
                                     {/* Actions */}
                                     <div className="flex items-center gap-2">
                                         {isEditing ? (
@@ -1240,10 +1142,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                                                 </div>
                                                 <input type="datetime-local" value={editingTaskDueDate} onChange={e => setEditingTaskDueDate(e.target.value)} className="text-sm p-2 rounded border border-gray-300 dark:bg-gray-600 dark:border-gray-500" />
                                             </div>
-                                            <div className="mt-2 text-sm z-30">
-                                                <p className="mb-1 font-medium text-gray-700 dark:text-gray-300">תגיות:</p>
-                                                <LabelSelector selectedLabelIds={editingTaskLabelIds} onChange={setEditingTaskLabelIds} module="task" />
-                                            </div>
                                         </div>
                                     ) : (
                                         <>
@@ -1260,9 +1158,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                                                         ({subtasksDone}/{subtasksTotal})
                                                     </span>
                                                 )}
-                                            </div>
-                                            <div className="mt-2">
-                                                <LabelSelector selectedLabelIds={task.labelIds || []} onChange={(newLabelIds) => handleInlineLabelChange(client.id, task.id, newLabelIds)} module="task" />
                                             </div>
                                         </>
                                     )}
@@ -1283,29 +1178,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                                         </>
                                     )}
                                 </div>
-                                {(visibilitySettings.tasks.enableTimeTracking ?? true) && (
-                                    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-1 pr-2 rounded-full border flex-shrink-0">
-                                        <button
-                                            onClick={() => handleTimeAdjustment(client.id, task.id, -5 * 60 * 1000)}
-                                            className="text-gray-400 hover:text-red-500 p-1"
-                                        >
-                                            <Minus className="w-3 h-3" />
-                                        </button>
-
-                                        <TimeInput
-                                            valueMs={Number(task.totalTime) || 0}
-                                            onChange={(val) => handleManualTimeChange(client.id, task.id, val)}
-                                            className="font-mono text-xs w-[40px] text-center bg-transparent border border-transparent hover:border-gray-300 rounded focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors"
-                                        />
-
-                                        <button
-                                            onClick={() => handleTimeAdjustment(client.id, task.id, 5 * 60 * 1000)}
-                                            className="text-gray-400 hover:text-green-500 p-1"
-                                        >
-                                            <Plus className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )
@@ -1418,10 +1290,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                             className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-primary dark:bg-base-800 dark:border-gray-600"
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">תגיות</label>
-                        <LabelSelector selectedLabelIds={newTaskLabelIds} onChange={setNewTaskLabelIds} module="task" />
-                    </div>
                     <div className="flex justify-end gap-3 pt-4">
                         <button type="button" onClick={() => setAddModalOpen(false)} className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg">ביטול</button>
                         <button type="submit" disabled={!newTaskText.trim()} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">שמור משימה</button>
@@ -1489,7 +1357,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                                     <input
                                         id="mobile-task-search"
                                         type="search"
-                                        placeholder={`חיפוש משימה, ${entityLabels.singular} או תגית...`}
+                                        placeholder={`חיפוש משימה או ${entityLabels.singular}...`}
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         className={`w-full pr-10 ${searchTerm ? 'pl-9' : 'pl-4'} py-2.5 bg-gray-100/50 dark:bg-base-950/50 border-none rounded-xl focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white placeholder-gray-400 transition-all shadow-inner`}

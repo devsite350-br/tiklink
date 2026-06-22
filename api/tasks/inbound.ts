@@ -23,7 +23,7 @@ export default withErrorHandling(async (req: VercelRequest, res: VercelResponse)
   const unassociatedDoc = await unassociatedRef.get();
 
   const newTask = {
-    id: `task_${Date.now()}`, text: name, isCompleted: false, isRunning: false, labelIds: [],
+    id: `task_${Date.now()}`, text: name, isCompleted: false,
   };
 
   if (!unassociatedDoc.exists) {

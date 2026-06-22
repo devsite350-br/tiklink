@@ -22,16 +22,7 @@ interface ClientFormModalProps {
     clientToEdit: Client | null;
 }
 
-import { TimeInput } from './TimeInput';
-import { ChevronDown, X, Calendar as CalendarIcon, Minus, Plus, Check, Pencil, Trash2, User, ClipboardCheck, FileText, Sparkles, Copy, ExternalLink } from 'lucide-react';
-
-const isColorLight = (hexColor: string) => {
-    const color = (hexColor.charAt(0) === '#') ? hexColor.substring(1, 7) : hexColor;
-    const r = parseInt(color.substring(0, 2), 16);
-    const g = parseInt(color.substring(2, 4), 16);
-    const b = parseInt(color.substring(4, 6), 16);
-    return (((r * 0.299) + (g * 0.587) + (b * 0.114)) > 186);
-};
+import { ChevronDown, X, Calendar as CalendarIcon, Plus, Check, Pencil, Trash2, User, ClipboardCheck, FileText, Sparkles, Copy, ExternalLink } from 'lucide-react';
 
 const getTaskCreationTime = (taskId: string) => {
     const parts = taskId.split('_');
@@ -49,14 +40,12 @@ const TaskManager: React.FC<{
     prefill?: { text: string; nonce: number } | null;
     clientId?: string;
 }> = ({ tasks, setTasks, onActivityEvent, prefill, clientId }) => {
-    const { labelMap, visibilitySettings, effectiveUserId } = useAppContext();
+    const { effectiveUserId } = useAppContext();
     const [newTaskText, setNewTaskText] = useState('');
-    const [newTaskLabelIds, setNewTaskLabelIds] = useState<string[]>([]);
     const [newTaskDueDate, setNewTaskDueDate] = useState<string>('');
     const [isBulkModalOpen, setBulkModalOpen] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [editingTaskText, setEditingTaskText] = useState('');
-    const [editingTaskLabelIds, setEditingTaskLabelIds] = useState<string[]>([]);
     const [editingTaskDueDate, setEditingTaskDueDate] = useState<string>('');
     const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
     const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
@@ -91,9 +80,8 @@ const TaskManager: React.FC<{
     const handleAddTask = () => {
         if (newTaskText.trim()) {
             const user = auth.currentUser;
-            setTasks([...tasks, { id: `task_${Date.now()}`, text: newTaskText.trim(), isCompleted: false, labelIds: newTaskLabelIds, dueDate: newTaskDueDate || undefined, createdAt: Date.now(), authorId: user?.uid || '', authorName: user?.displayName || user?.email?.split('@')[0] || '', authorPhotoUrl: user?.photoURL || '' }]);
+            setTasks([...tasks, { id: `task_${Date.now()}`, text: newTaskText.trim(), isCompleted: false, dueDate: newTaskDueDate || undefined, createdAt: Date.now(), authorId: user?.uid || '', authorName: user?.displayName || user?.email?.split('@')[0] || '', authorPhotoUrl: user?.photoURL || '' }]);
             setNewTaskText('');
-            setNewTaskLabelIds([]);
             setNewTaskDueDate('');
             if (newTaskTextareaRef.current) {
                 newTaskTextareaRef.current.style.height = 'auto';
@@ -154,7 +142,6 @@ const TaskManager: React.FC<{
         e.stopPropagation();
         setEditingTaskId(task.id);
         setEditingTaskText(task.text);
-        setEditingTaskLabelIds(task.labelIds || []);
         setEditingTaskDueDate(task.dueDate || '');
     };
 
@@ -165,7 +152,6 @@ const TaskManager: React.FC<{
         }
         setEditingTaskId(null);
         setEditingTaskText('');
-        setEditingTaskLabelIds([]);
         setEditingTaskDueDate('');
     };
 
@@ -175,27 +161,10 @@ const TaskManager: React.FC<{
             e.stopPropagation();
         }
         if (!editingTaskId) return;
-        setTasks(tasks.map(t => t.id === editingTaskId ? { ...t, text: editingTaskText, labelIds: editingTaskLabelIds, dueDate: editingTaskDueDate || undefined } : t));
+        setTasks(tasks.map(t => t.id === editingTaskId ? { ...t, text: editingTaskText, dueDate: editingTaskDueDate || undefined } : t));
         setEditingTaskId(null);
         setEditingTaskText('');
-        setEditingTaskLabelIds([]);
         setEditingTaskDueDate('');
-    };
-
-    const handleManualTimeChange = (taskId: string, newTotalTime: number) => {
-        setTasks(tasks.map(t => t.id === taskId ? { ...t, totalTime: newTotalTime } : t));
-    };
-
-    const handleTimeAdjustment = (taskId: string, adjustmentMs: number) => {
-        setTasks(tasks.map(task => {
-            if (task.id === taskId) {
-                const currentTotal = Number(task.totalTime) || 0;
-                let newTotalTime = currentTotal + adjustmentMs;
-                if (newTotalTime < 0) newTotalTime = 0;
-                return { ...task, totalTime: newTotalTime };
-            }
-            return task;
-        }));
     };
 
     return (
@@ -212,9 +181,6 @@ const TaskManager: React.FC<{
                     className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none transition-all shadow-sm resize-none overflow-hidden"
                 />
                 <div className="flex gap-2 flex-wrap items-center">
-                    <div className="flex-grow min-w-0">
-                        <LabelSelector selectedLabelIds={newTaskLabelIds} onChange={setNewTaskLabelIds} module="task" />
-                    </div>
                     <input
                         type="datetime-local"
                         value={newTaskDueDate}
@@ -304,39 +270,18 @@ const TaskManager: React.FC<{
                                 )}
                             </div>
 
-                            {/* Label badges row - shown below task title when not editing */}
-                            {!isEditing && task.labelIds && task.labelIds.length > 0 && (
-                                <div className="flex flex-wrap gap-1 mt-1.5 mr-8">
-                                    {task.labelIds.map(id => {
-                                        const label = labelMap.get(id);
-                                        if (!label) return null;
-                                        return (
-                                            <span key={id} className="text-[11px] font-bold px-2 py-0.5 rounded-full shadow-sm opacity-80"
-                                                style={{ backgroundColor: label.color, color: isColorLight(label.color) ? '#000' : '#FFF' }}>
-                                                {label.name}
-                                            </span>
-                                        )
-                                    })}
-                                </div>
-                            )}
-
-                            {/* Bottom Row: Date/Tags & Controls */}
+                            {/* Bottom Row: Date & Controls */}
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mt-2 mr-8">
                                 {/* Right Side (RTL): Tags / Due Date */}
                                 <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
                                     {isEditing ? (
-                                        <>
-                                            <div className="flex-grow min-w-0">
-                                                <LabelSelector selectedLabelIds={editingTaskLabelIds} onChange={setEditingTaskLabelIds} module="task" />
-                                            </div>
-                                            <input
-                                                type="datetime-local"
-                                                value={editingTaskDueDate}
-                                                onChange={e => setEditingTaskDueDate(e.target.value)}
-                                                className="px-3 py-2.5 text-sm bg-white dark:bg-base-950 border border-gray-200 dark:border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-primary/50"
-                                                title="תאריך ושעה"
-                                            />
-                                        </>
+                                        <input
+                                            type="datetime-local"
+                                            value={editingTaskDueDate}
+                                            onChange={e => setEditingTaskDueDate(e.target.value)}
+                                            className="px-3 py-2.5 text-sm bg-white dark:bg-base-950 border border-gray-200 dark:border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-primary/50"
+                                            title="תאריך ושעה"
+                                        />
                                     ) : (
                                         <div
                                             className="inline-flex items-center gap-1 cursor-pointer"
@@ -372,19 +317,8 @@ const TaskManager: React.FC<{
                                     )}
                                 </div>
 
-                                {/* Left Side (RTL): Timer & Action Buttons */}
+                                {/* Left Side (RTL): Action Buttons */}
                                 <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
-                                    {(visibilitySettings.tasks?.enableTimeTracking ?? true) && (
-                                    <div className="flex items-center gap-2 bg-white dark:bg-base-950/50 px-2 py-1 rounded-full border border-gray-100 dark:border-white/10 shrink-0 group">
-                                        <button type="button" onClick={() => handleTimeAdjustment(task.id, -5 * 60 * 1000)} className="text-gray-400 hover:text-red-500 p-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Minus className="w-3 h-3" />
-                                        </button>
-                                        <TimeInput valueMs={Number(task.totalTime) || 0} onChange={(val) => handleManualTimeChange(task.id, val)} className="font-mono text-xs w-10 text-center bg-transparent outline-none focus:ring-1 focus:ring-primary/50 rounded" />
-                                        <button type="button" onClick={() => handleTimeAdjustment(task.id, 5 * 60 * 1000)} className="text-gray-400 hover:text-green-500 p-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Plus className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                    )}
                                     {isEditing ? (
                                         <div className="flex items-center gap-2 shrink-0">
                                             <button type="button" onClick={handleEditSave} className="text-green-500 hover:text-green-600">

@@ -80,32 +80,6 @@ export const ModuleVisibilityCheckboxes: React.FC<{
                         <span className={`text-gray-700 dark:text-gray-300 ${allowToggle && !(current.enabled ?? defaultEnabled) ? 'opacity-50' : ''}`}>{entityLabels.showInCard}</span>
                     </label>
                 </div>
-                {moduleKey === 'tasks' && (
-                    <label className="flex items-center gap-2 cursor-pointer border-t border-blue-100 dark:border-blue-500/10 pt-4 mt-2">
-                        <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                            <input
-                                type="checkbox"
-                                name="toggle-time"
-                                id={`toggle-time-${moduleKey}`}
-                                checked={current.enableTimeTracking ?? true}
-                                onChange={e => handleChange('enableTimeTracking', e.target.checked)}
-                                className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-transform duration-200 ease-in-out focus:outline-none focus:ring-0 focus:ring-offset-0 disabled:opacity-50"
-                                style={{
-                                    transform: (current.enableTimeTracking ?? true) ? 'translateX(-100%)' : 'translateX(0)',
-                                    borderColor: (current.enableTimeTracking ?? true) ? '#3b82f6' : '#d1d5db',
-                                    backgroundColor: (current.enableTimeTracking ?? true) ? '#3b82f6' : '#fff',
-                                    right: 0
-                                }}
-                                disabled={allowToggle && !(current.enabled ?? defaultEnabled)}
-                            />
-                            <label
-                                htmlFor={`toggle-time-${moduleKey}`}
-                                className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer transition-colors duration-200 ease-in-out disabled:opacity-50 ${(current.enableTimeTracking ?? true) ? 'bg-blue-200 dark:bg-blue-900' : 'bg-gray-300 dark:bg-gray-600'}`}
-                            ></label>
-                        </div>
-                        <span className={`font-bold ${allowToggle && !(current.enabled ?? defaultEnabled) ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>הפעל מודול זמן</span>
-                    </label>
-                )}
             </div>
         </div>
     );
@@ -128,7 +102,6 @@ const LabelsManager = () => {
     // Module visibility for labels
     // (displayed above the labels list)
     const { labels, addLabel, updateLabel, deleteLabel, clients, entityLabels } = useAppContext();
-    const [activeModule, setActiveModule] = useState<'client' | 'task'>('client');
     const [newLabelName, setNewLabelName] = useState('');
     const [newLabelColor, setNewLabelColor] = useState('#473472');
 
@@ -136,16 +109,13 @@ const LabelsManager = () => {
     const [editedLabelData, setEditedLabelData] = useState<Omit<LabelDefinition, 'id'>>({ name: '', color: '#473472' });
 
     const filteredLabels = useMemo(() => {
-        return labels.filter(l => {
-            if (activeModule === 'client') return !l.module || l.module === 'client';
-            return l.module === 'task';
-        });
-    }, [labels, activeModule]);
+        return labels.filter(l => !l.module || l.module === 'client');
+    }, [labels]);
 
     const handleAddLabel = (e: React.FormEvent) => {
         e.preventDefault();
         if (newLabelName.trim()) {
-            addLabel(newLabelName.trim(), newLabelColor, activeModule);
+            addLabel(newLabelName.trim(), newLabelColor, 'client');
             setNewLabelName('');
             setNewLabelColor('#473472');
         }
@@ -166,24 +136,10 @@ const LabelsManager = () => {
     return (
         <div className="space-y-6 px-1">
             <ModuleVisibilityCheckboxes moduleKey="labels" label="תגיות" />
-            <div className="bg-gray-100 dark:bg-white/5 p-1.5 rounded-xl inline-flex gap-2">
-                <button
-                    onClick={() => setActiveModule('client')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeModule === 'client' ? 'bg-white dark:bg-gray-700 text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-                >
-                    {entityLabels.entityTags}
-                </button>
-                <button
-                    onClick={() => setActiveModule('task')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeModule === 'task' ? 'bg-white dark:bg-gray-700 text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'}`}
-                >
-                    תגיות משימות
-                </button>
-            </div>
 
             <div>
                 <h3 className="text-lg font-medium mb-2">
-                    {activeModule === 'client' ? `תגיות ${entityLabels.singular} קיימות` : 'תגיות משימות קיימות'}
+                    {`תגיות ${entityLabels.singular} קיימות`}
                 </h3>
                 {filteredLabels.length > 0 ? (
                     <ul className="space-y-2 max-h-96 overflow-y-auto pr-2 hide-scrollbar">
@@ -229,10 +185,10 @@ const LabelsManager = () => {
                             </li>
                         ))}
                     </ul>
-                ) : <p className="text-gray-500">אין תגיות {activeModule === 'client' ? entityLabels.singular : 'משימות'} קיימות.</p>}
+                ) : <p className="text-gray-500">אין תגיות {entityLabels.singular} קיימות.</p>}
             </div>
             <form onSubmit={handleAddLabel} className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-6">
-                <h3 className="text-lg font-medium mb-2">הוספת תגית {activeModule === 'client' ? entityLabels.singular : 'משימה'} חדשה</h3>
+                <h3 className="text-lg font-medium mb-2">הוספת תגית {entityLabels.singular} חדשה</h3>
                 <div className="flex flex-col sm:flex-row items-center gap-3">
                     <input
                         type="color"

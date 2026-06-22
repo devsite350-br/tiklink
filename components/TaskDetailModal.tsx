@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from './Modal';
 import { Task, Subtask, CrmDocument, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
-import { LabelSelector } from './LabelSelector';
 import { useAppContext } from '../context/AppContext';
 import { uploadFile } from '../utils/apiClient';
 import { X, ChevronDown, Link, Paperclip, Download } from 'lucide-react';
@@ -25,7 +24,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
     const { entityLabels, addDocument, documents } = useAppContext();
     const [text, setText] = useState(task.text);
     const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
-    const [labelIds, setLabelIds] = useState<string[]>(task.labelIds || []);
     const [dueDate, setDueDate] = useState<string>(task.dueDate || '');
     const [shareToken, setShareToken] = useState<string | undefined>(task.shareToken);
     const [newSubtaskText, setNewSubtaskText] = useState('');
@@ -43,7 +41,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
         }
         setText(task.text);
         setSubtasks(task.subtasks || []);
-        setLabelIds(task.labelIds || []);
         setDueDate(task.dueDate || '');
         setShareToken(task.shareToken);
         clientChangedRef.current = false;
@@ -85,7 +82,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
     const hasChanges = () => {
         const t = taskRef.current;
         if ((text.trim() || t.text) !== t.text) return true;
-        if (JSON.stringify(labelIds) !== JSON.stringify(t.labelIds || [])) return true;
         if ((dueDate || '') !== (t.dueDate || '')) return true;
         if (shareToken !== t.shareToken) return true;
         const currentSubKey = subtasks.map(s => `${s.id}:${s.isCompleted ? 1 : 0}:${s.text}`).join('|');
@@ -101,7 +97,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
             ...taskRef.current,
             text: text.trim() || taskRef.current.text,
             subtasks: subtasks.length > 0 ? subtasks : undefined,
-            labelIds,
             dueDate: dueDate || undefined,
             shareToken,
         };
@@ -114,7 +109,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
         debounceTimer.current = setTimeout(flushSave, 400);
         return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
-    }, [text, subtasks, labelIds, dueDate, shareToken]);
+    }, [text, subtasks, dueDate, shareToken]);
 
     const isChecklist = subtasks.length > 0;
 
@@ -201,7 +196,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
         ...task,
         text: text.trim() || task.text,
         subtasks: subtasks.length > 0 ? subtasks : undefined,
-        labelIds,
         dueDate: dueDate || undefined,
         shareToken,
         ...overrides,
@@ -440,12 +434,6 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                         onChange={(e) => setDueDate(e.target.value)}
                         className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-primary dark:bg-base-800 dark:border-gray-600 outline-none"
                     />
-                </div>
-
-                {/* Labels */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">תגיות</label>
-                    <LabelSelector selectedLabelIds={labelIds} onChange={setLabelIds} module="task" />
                 </div>
 
                 {/* Share Link - only for checklist tasks */}
