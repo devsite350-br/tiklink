@@ -10,9 +10,9 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#6366f1',    // Indigo 500
-        secondary: '#4f46e5',  // Indigo 600 - More blue
-        accent: '#8b5cf6',     // Violet 500
+        primary: '#2f8f74',    // Brand teal
+        secondary: '#256f5a',  // Brand teal (darker)
+        accent: '#234a63',     // Brand navy (logo gradient end)
         'base-100': '#FFFFFF',
         'base-200': '#F1F5F9', // Slate 100
         'base-300': '#E2E8F0', // Slate 200
@@ -33,8 +33,8 @@ export default {
         sans: ['Rubik', 'sans-serif'],
       },
       boxShadow: {
-        'glow': '0 0 20px rgba(99, 102, 241, 0.5)',
-        'glow-sm': '0 0 10px rgba(99, 102, 241, 0.3)',
+        'glow': '0 0 20px rgba(47, 143, 116, 0.5)',
+        'glow-sm': '0 0 10px rgba(47, 143, 116, 0.3)',
       },
       animation: {
         'fade-in-up': 'fadeInUp 0.5s ease-out',
