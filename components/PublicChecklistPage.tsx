@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebaseConfig';
-import { collection, getDocs, doc, onSnapshot, query, where } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { Client, Task, Subtask, CrmDocument, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
+import { Client, Task, Subtask, CrmDocument, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK, DEFAULT_LOGO_URL } from '../types';
 import { uploadPublicFile, togglePublicSubtask } from '../utils/apiClient';
 import LinkifiedContent from './LinkifiedContent';
 import { Sun, Moon, CheckCircle2, Paperclip, Download } from 'lucide-react';
@@ -24,6 +24,7 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
     const [authReady, setAuthReady] = useState(false);
     const [isDark, setIsDark] = useState(false);
     const [clientFiles, setClientFiles] = useState<CrmDocument[]>([]);
+    const [logoUrl, setLogoUrl] = useState<string>(DEFAULT_LOGO_URL);
     const [uploadingSubtaskId, setUploadingSubtaskId] = useState<string | null>(null);
     const subtaskFileInputRef = useRef<HTMLInputElement>(null);
     const pendingSubtaskRef = useRef<Subtask | null>(null);
@@ -53,6 +54,18 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
             setIsDark(true);
         }
     };
+
+    // Load the configurable system logo from the public branding config so the
+    // shared link carries the same logo shown inside the app. Falls back to the
+    // bundled default when none is set.
+    useEffect(() => {
+        getDoc(doc(db, 'config', 'owner'))
+            .then(snap => {
+                const url = snap.exists() ? (snap.data().logoUrl as string | undefined) : undefined;
+                if (url) setLogoUrl(url);
+            })
+            .catch(() => { /* keep default logo on error */ });
+    }, []);
 
     // Subscribe to auth state
     useEffect(() => {
@@ -295,6 +308,11 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 overflow-y-auto" dir="rtl">
             <div className="max-w-[1600px] mx-auto p-4 sm:p-8 pb-12">
+                {/* Brand logo */}
+                <div className="flex justify-center mb-6">
+                    <img src={logoUrl} alt="לוגו" className="h-12 sm:h-14 w-auto max-w-[260px] object-contain" />
+                </div>
+
                 {/* Top bar — title + theme toggle */}
                 <div className="flex items-center justify-between mb-6 gap-4">
                     <div className="flex-1 text-center">

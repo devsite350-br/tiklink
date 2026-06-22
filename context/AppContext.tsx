@@ -121,6 +121,8 @@ interface AppContextType {
   canCreateClient: boolean;
   canUploadFile: boolean;
   incrementFileCount: () => Promise<void>;
+  logoUrl: string | null;
+  updateLogoUrl: (url: string | null) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -175,6 +177,8 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
   const entityLabels = useMemo(() => getEntityLabels(entityLabel), [entityLabel]);
   const [clientCount, setClientCount] = useState(0);
   const [fileCount, setFileCount] = useState(0);
+  // System logo URL (stored on the public config/owner doc). null => default.
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   // No admin-managed module blocking in the standalone build.
   const blockedModules: string[] = [];
   const effectiveVisibilitySettings = visibilitySettings;
@@ -327,9 +331,16 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
           }
         }, handleError);
 
+        // 2c. Listen to the public branding config (system logo) so both the
+        // app and the anonymous public share pages share one source of truth.
+        const brandingListener = onSnapshot(doc(db, 'config', 'owner'), (snap) => {
+          setLogoUrl(snap.exists() ? ((snap.data().logoUrl as string) || null) : null);
+        }, handleError);
+
         // 3. Listen to Data
         const unsubscribers = [
           userDocListener,
+          brandingListener,
           onSnapshot(userColl('statuses', targetUserId), snap => setStatuses(snap.docs.map(d => ({ id: d.id, ...d.data() } as StatusDefinition)).sort(sortWithOrder)), handleError),
           onSnapshot(userColl('clients', targetUserId), snap => { setClients(snap.docs.map(d => ({ id: d.id, ...d.data() } as Client))); setIsSyncing(false); }, handleError),
           onSnapshot(userColl('customFields', targetUserId), snap => setCustomFields(snap.docs.map(d => ({ id: d.id, ...d.data() } as CustomFieldDefinition)).sort(sortWithOrder)), handleError),
@@ -730,6 +741,12 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
     await setDoc(doc(db, 'users', effectiveUserId, 'settings', 'email'), settings);
   };
 
+  // Persist the system logo on the public config/owner doc. Passing null clears
+  // it, which makes the app fall back to the bundled default logo.
+  const updateLogoUrl = async (url: string | null) => {
+    await setDoc(doc(db, 'config', 'owner'), { logoUrl: url ?? null }, { merge: true });
+  };
+
   // Meetings are routed through the API so the Firestore write and the Google
   // Calendar sync happen atomically (replacing the old Firestore triggers).
   const addMeeting = async (m: Omit<Meeting, 'id' | 'googleEventIds'>) => {
@@ -802,7 +819,8 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
       isLoading,
       dbError,
       plan, entityLabel, entityLabels, blockedModules, clientCount, fileCount,
-      canCreateClient, canUploadFile, incrementFileCount
+      canCreateClient, canUploadFile, incrementFileCount,
+      logoUrl, updateLogoUrl
     }}>
       {children}
     </AppContext.Provider>

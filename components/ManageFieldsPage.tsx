@@ -13,6 +13,7 @@ import { AISettings } from './AISettings';
 import { MeetingsSettings } from './MeetingsSettings';
 import { WhatsAppSettings } from './WhatsAppSettings';
 import { EmailSettings } from './EmailSettings';
+import { SystemSettings } from './SystemSettings';
 
 export const ModuleVisibilityCheckboxes: React.FC<{
     moduleKey: keyof VisibilitySettings;
@@ -939,7 +940,7 @@ const EmailModuleToggle: React.FC = () => {
 };
 
 export const ManageFieldsPage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'fields' | 'statuses' | 'labels' | 'leadSources' | 'automations' | 'team' | 'ai' | 'meetings' | 'documents' | 'whatsapp' | 'email' | 'tasks'>('fields');
+    const [activeTab, setActiveTab] = useState<'fields' | 'statuses' | 'labels' | 'leadSources' | 'automations' | 'team' | 'ai' | 'meetings' | 'documents' | 'whatsapp' | 'email' | 'tasks' | 'system'>('fields');
     const { blockedModules } = useAppContext();
     const isBlocked = (key: string) => blockedModules.includes(key);
 
@@ -1046,6 +1047,13 @@ export const ManageFieldsPage: React.FC = () => {
                         אימייל
                     </button>
                     )}
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab('system')}
+                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'system' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                    >
+                        מערכת
+                    </button>
                 </nav>
             </div>
             <div className="flex-1 overflow-y-auto overflow-x-hidden pl-4">
@@ -1070,6 +1078,7 @@ export const ManageFieldsPage: React.FC = () => {
                         <EmailSettings />
                     </div>
                 )}
+                {activeTab === 'system' && <SystemSettings />}
             </div>
         </div>
     );

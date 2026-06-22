@@ -334,6 +334,11 @@ export interface CrmNotification {
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB per file
 export const MAX_FILES_PER_SUBTASK = 5; // attachments per checklist item
 
+// System logo. The configurable logo URL is stored on the public `config/owner`
+// doc so the anonymous public share pages can read it too. When unset, the app
+// falls back to this bundled default so there is never a "no logo" state.
+export const DEFAULT_LOGO_URL = '/default-logo.svg';
+
 // Content types accepted for uploads (images, PDF, Word, Excel).
 export const ALLOWED_UPLOAD_TYPES: string[] = [
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',

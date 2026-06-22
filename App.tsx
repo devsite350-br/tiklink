@@ -5,7 +5,7 @@ import { ClientGrid } from './components/ClientGrid';
 import { ClientTable } from './components/ClientTable';
 import { TasksPage } from './components/TasksPage';
 import { MeetingsPage } from './components/MeetingsPage';
-import { Client, UNASSOCIATED_CLIENT_ID } from './types';
+import { Client, UNASSOCIATED_CLIENT_ID, DEFAULT_LOGO_URL } from './types';
 import { ClientFormModal } from './components/ClientFormModal';
 import { ManageFieldsPage } from './components/ManageFieldsPage';
 import { auth } from './firebaseConfig';
@@ -117,7 +117,7 @@ const Header: React.FC<{
     };
 }> = ({ searchTerm, setSearchTerm, onAddClientClick, view, onViewChange, clientView, onClientViewChange, user, onExportClick, onImportClick, filterStatus, setFilterStatus, filterLabelId, setFilterLabelId, sortDirection, setSortDirection, onToggleMobileSidebar, hasActiveFilters, notificationProps }) => {
 
-    const { isSyncing, dbError, statuses, labels, visibilitySettings, entityLabels } = useAppContext();
+    const { isSyncing, dbError, statuses, labels, visibilitySettings, entityLabels, logoUrl } = useAppContext();
 
     const [isDark, setIsDark] = useState(false);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -182,12 +182,7 @@ const Header: React.FC<{
                         className="hidden md:flex items-center gap-2 hover:opacity-80 transition-opacity text-left cursor-pointer"
                         title="חזרה לעמוד הראשי"
                     >
-                        <img src="/favicon.png" alt="Simpofy Logo" className="w-8 h-8 rounded-lg shadow-sm" />
-                        <div className="flex flex-col">
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent tracking-tight leading-none">
-                                Simpofy
-                            </h1>
-                        </div>
+                        <img src={logoUrl || DEFAULT_LOGO_URL} alt="לוגו המערכת" className="h-9 w-auto max-w-[180px] object-contain" />
                     </button>
 
                     {/* Mobile Toggle Button (replacing logo on mobile) */}
@@ -526,7 +521,7 @@ const Header: React.FC<{
 };
 
 const AppContent: React.FC<{ user: User; onUserRefresh: () => void }> = ({ user, onUserRefresh }) => {
-    const { clients, statuses, labels, isLoading, dbError, addClient, plan, entityLabels, meetings, effectiveUserId, userId } = useAppContext();
+    const { clients, statuses, labels, isLoading, dbError, addClient, plan, entityLabels, meetings, effectiveUserId, userId, logoUrl } = useAppContext();
 
     const {
         notifications: notifList,
@@ -870,12 +865,7 @@ const AppContent: React.FC<{ user: User; onUserRefresh: () => void }> = ({ user,
                                 }}
                                 className="flex items-center gap-2 hover:opacity-80 transition-opacity text-left cursor-pointer"
                             >
-                                <img src="/favicon.png" alt="Simpofy Logo" className="w-8 h-8 rounded-lg shadow-sm" />
-                                <div className="flex flex-col">
-                                    <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent tracking-tight leading-none">
-                                        Simpofy
-                                    </h1>
-                                </div>
+                                <img src={logoUrl || DEFAULT_LOGO_URL} alt="לוגו המערכת" className="h-9 w-auto max-w-[180px] object-contain" />
                             </button>
 
                             {/* Close Button */}
