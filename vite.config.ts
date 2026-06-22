@@ -13,12 +13,12 @@ export default defineConfig(() => {
         react(),
         VitePWA({
           registerType: 'autoUpdate',
-          includeAssets: ['favicon.png', 'icon.svg', 'pwa-*.png'],
+          includeAssets: ['favicon.svg', 'favicon.png', 'icon.svg', 'pwa-*.png'],
           manifest: {
             name: 'מערכת CRM לניהול לקוחות',
             short_name: 'CRM',
             description: 'מערכת CRM לניהול לקוחות ומשימות',
-            theme_color: '#7c3aed',
+            theme_color: '#2f8f74',
             background_color: '#ffffff',
             display: 'standalone',
             orientation: 'portrait',

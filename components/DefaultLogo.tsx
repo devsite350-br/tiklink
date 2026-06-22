@@ -25,10 +25,10 @@ export const DefaultLogo: React.FC<{ className?: string }> = ({ className }) => 
         {/* Monogram tile */}
         <rect x="5" y="5" width="140" height="140" rx="34" fill="url(#tlTileGrad)" />
 
-        {/* White "T" whose stem flows into an "L" hook — a single clean mark */}
-        <g fill="none" stroke="#ffffff" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M40 52 H112" />
-            <path d="M76 52 V92 a20 20 0 0 0 20 20 H112" />
+        {/* Clean white "T" — crossbar + stem as rounded bars */}
+        <g fill="#ffffff">
+            <rect x="34" y="42" width="82" height="21" rx="8" />
+            <rect x="64.5" y="42" width="21" height="70" rx="8" />
         </g>
 
         {/* Wordmark */}
