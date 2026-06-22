@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { uploadFile } from '../utils/apiClient';
-import { DEFAULT_LOGO_URL, MAX_UPLOAD_BYTES } from '../types';
+import { MAX_UPLOAD_BYTES } from '../types';
+import { DefaultLogo } from './DefaultLogo';
 import { Image as ImageIcon, Upload, Trash2, Loader2 } from 'lucide-react';
 
 // "מערכת" settings tab. Currently hosts the configurable system logo.
@@ -11,7 +12,6 @@ export const SystemSettings: React.FC = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-    const effectiveLogo = logoUrl || DEFAULT_LOGO_URL;
     const usingDefault = !logoUrl;
 
     const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,7 +70,9 @@ export const SystemSettings: React.FC = () => {
                 {/* Current logo preview */}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-5">
                     <div className="flex items-center justify-center h-28 w-full sm:w-80 rounded-xl border border-dashed border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-3">
-                        <img src={effectiveLogo} alt="לוגו המערכת" className="max-h-full max-w-full object-contain" />
+                        {usingDefault
+                            ? <DefaultLogo className="max-h-full max-w-full" />
+                            : <img src={logoUrl!} alt="לוגו המערכת" className="max-h-full max-w-full object-contain" />}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                         {usingDefault

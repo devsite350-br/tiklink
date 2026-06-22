@@ -3,8 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebaseConfig';
 import { collection, getDocs, getDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { Client, Task, Subtask, CrmDocument, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK, DEFAULT_LOGO_URL } from '../types';
+import { Client, Task, Subtask, CrmDocument, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
 import { uploadPublicFile, togglePublicSubtask } from '../utils/apiClient';
+import { DefaultLogo } from './DefaultLogo';
 import LinkifiedContent from './LinkifiedContent';
 import { Sun, Moon, CheckCircle2, Paperclip, Download } from 'lucide-react';
 
@@ -24,7 +25,7 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
     const [authReady, setAuthReady] = useState(false);
     const [isDark, setIsDark] = useState(false);
     const [clientFiles, setClientFiles] = useState<CrmDocument[]>([]);
-    const [logoUrl, setLogoUrl] = useState<string>(DEFAULT_LOGO_URL);
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [uploadingSubtaskId, setUploadingSubtaskId] = useState<string | null>(null);
     const subtaskFileInputRef = useRef<HTMLInputElement>(null);
     const pendingSubtaskRef = useRef<Subtask | null>(null);
@@ -310,7 +311,9 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
             <div className="max-w-[1600px] mx-auto p-4 sm:p-8 pb-12">
                 {/* Brand logo */}
                 <div className="flex justify-center mb-6">
-                    <img src={logoUrl} alt="לוגו" className="h-12 sm:h-14 w-auto max-w-[260px] object-contain" />
+                    {logoUrl
+                        ? <img src={logoUrl} alt="לוגו" className="h-12 sm:h-14 w-auto max-w-[260px] object-contain" />
+                        : <DefaultLogo className="h-14 sm:h-16 w-auto" />}
                 </div>
 
                 {/* Top bar — title + theme toggle */}

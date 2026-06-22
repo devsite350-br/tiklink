@@ -1,11 +1,12 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
+import { DefaultLogo } from './components/DefaultLogo';
 import { ClientGrid } from './components/ClientGrid';
 import { ClientTable } from './components/ClientTable';
 import { TasksPage } from './components/TasksPage';
 import { MeetingsPage } from './components/MeetingsPage';
-import { Client, UNASSOCIATED_CLIENT_ID, DEFAULT_LOGO_URL } from './types';
+import { Client, UNASSOCIATED_CLIENT_ID } from './types';
 import { ClientFormModal } from './components/ClientFormModal';
 import { ManageFieldsPage } from './components/ManageFieldsPage';
 import { auth } from './firebaseConfig';
@@ -182,7 +183,9 @@ const Header: React.FC<{
                         className="hidden md:flex items-center gap-2 hover:opacity-80 transition-opacity text-left cursor-pointer"
                         title="חזרה לעמוד הראשי"
                     >
-                        <img src={logoUrl || DEFAULT_LOGO_URL} alt="לוגו המערכת" className="h-9 w-auto max-w-[180px] object-contain" />
+                        {logoUrl
+                            ? <img src={logoUrl} alt="לוגו המערכת" className="h-9 w-auto max-w-[180px] object-contain" />
+                            : <DefaultLogo className="h-9 w-auto" />}
                     </button>
 
                     {/* Mobile Toggle Button (replacing logo on mobile) */}
@@ -865,7 +868,9 @@ const AppContent: React.FC<{ user: User; onUserRefresh: () => void }> = ({ user,
                                 }}
                                 className="flex items-center gap-2 hover:opacity-80 transition-opacity text-left cursor-pointer"
                             >
-                                <img src={logoUrl || DEFAULT_LOGO_URL} alt="לוגו המערכת" className="h-9 w-auto max-w-[180px] object-contain" />
+                                {logoUrl
+                                    ? <img src={logoUrl} alt="לוגו המערכת" className="h-9 w-auto max-w-[180px] object-contain" />
+                                    : <DefaultLogo className="h-9 w-auto" />}
                             </button>
 
                             {/* Close Button */}
