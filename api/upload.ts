@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { adminAuth } from './_lib/admin';
+import { ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES } from './_lib/uploads';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -18,11 +19,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const firebaseToken = clientPayload || '';
         await adminAuth.verifyIdToken(firebaseToken);
         return {
-          allowedContentTypes: [
-            'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-            'image/svg+xml', 'application/pdf',
-          ],
-          maximumSizeInBytes: 10 * 1024 * 1024,
+          allowedContentTypes: ALLOWED_UPLOAD_TYPES,
+          maximumSizeInBytes: MAX_UPLOAD_BYTES,
         };
       },
       onUploadCompleted: async () => {},

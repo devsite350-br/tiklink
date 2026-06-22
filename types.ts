@@ -149,12 +149,24 @@ export interface CrmDocument {
   updatedAt: number;
   signedAt?: number;
   publicToken: string;
-  content: DocumentContent;
+  content?: DocumentContent; // only for kind === 'generated'
   signatureDataUrl?: string;
   signerName?: string;
   authorId?: string;
   authorName?: string;
   authorPhotoUrl?: string;
+  // ── File attachments ──
+  // kind defaults to 'generated' (HTML document built from a template). When
+  // kind === 'file' the record represents an uploaded file (image / PDF / Office
+  // doc) stored on Vercel Blob and shown in the documents tab as a download card.
+  kind?: 'generated' | 'file';
+  fileUrl?: string; // public Blob URL (kind === 'file')
+  fileName?: string; // original file name
+  fileSize?: number; // bytes
+  mimeType?: string; // content type
+  uploadedBy?: 'team' | 'client'; // who attached the file
+  sourceSubtaskId?: string; // checklist item this file was attached to (if any)
+  sourceSubtaskText?: string; // snapshot of the checklist item text
 }
 
 export interface DocumentTemplate {
@@ -301,7 +313,7 @@ export interface ImportBatch {
 export const UNASSOCIATED_CLIENT_ID = 'unassociated_client_id';
 
 // ── Notifications ──────────────────────────────────────────────
-export type NotificationType = 'meeting_reminder' | 'task_reminder' | 'task_overdue';
+export type NotificationType = 'meeting_reminder' | 'task_reminder' | 'task_overdue' | 'file_uploaded';
 
 export interface CrmNotification {
   id: string;
@@ -309,7 +321,7 @@ export interface CrmNotification {
   title: string;
   body: string;
   relatedId: string;
-  relatedType: 'meeting' | 'task';
+  relatedType: 'meeting' | 'task' | 'document';
   clientId?: string;
   triggerTime: number;
   read: boolean;
@@ -317,6 +329,20 @@ export interface CrmNotification {
   browserNotified: boolean;
   createdAt: number;
 }
+
+// ── File upload limits (shared client/server) ──
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB per file
+export const MAX_FILES_PER_SUBTASK = 5; // attachments per checklist item
+
+// Content types accepted for uploads (images, PDF, Word, Excel).
+export const ALLOWED_UPLOAD_TYPES: string[] = [
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+  'application/pdf',
+  'application/msword', // .doc
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/vnd.ms-excel', // .xls
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+];
 
 export interface NotificationSettings {
   enabled: boolean;

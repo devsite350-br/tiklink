@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bell, Check, CheckCheck, X, Calendar, ClipboardList, AlertTriangle, Settings, Clock } from 'lucide-react';
+import { Bell, Check, CheckCheck, X, Calendar, ClipboardList, AlertTriangle, Settings, Clock, Paperclip } from 'lucide-react';
 import { CrmNotification, NotificationSettings } from '../types';
 
 interface NotificationCenterProps {
@@ -51,6 +51,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         return <ClipboardList className="w-4 h-4 text-amber-500" />;
       case 'task_overdue':
         return <AlertTriangle className="w-4 h-4 text-red-500" />;
+      case 'file_uploaded':
+        return <Paperclip className="w-4 h-4 text-green-500" />;
     }
   };
 

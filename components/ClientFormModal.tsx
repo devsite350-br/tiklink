@@ -47,7 +47,8 @@ const TaskManager: React.FC<{
     setTasks: (tasks: Task[]) => void;
     onActivityEvent: (event: ActivityEvent) => void;
     prefill?: { text: string; nonce: number } | null;
-}> = ({ tasks, setTasks, onActivityEvent, prefill }) => {
+    clientId?: string;
+}> = ({ tasks, setTasks, onActivityEvent, prefill, clientId }) => {
     const { labelMap, visibilitySettings, effectiveUserId } = useAppContext();
     const [newTaskText, setNewTaskText] = useState('');
     const [newTaskLabelIds, setNewTaskLabelIds] = useState<string[]>([]);
@@ -420,6 +421,7 @@ const TaskManager: React.FC<{
                         task={t}
                         onSave={handleDetailSave}
                         userId={effectiveUserId}
+                        clientId={clientId}
                     />
                 );
             })()}
@@ -924,7 +926,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
                     </div>
                 )}
 
-                {activeTab === 'tasks' && <TaskManager tasks={clientData.tasks} setTasks={val => setClientData(p => ({ ...p, tasks: val }))} onActivityEvent={event => setClientData(p => ({ ...p, activityLog: [...(p.activityLog || []), event] }))} prefill={taskPrefill} />}
+                {activeTab === 'tasks' && <TaskManager tasks={clientData.tasks} setTasks={val => setClientData(p => ({ ...p, tasks: val }))} onActivityEvent={event => setClientData(p => ({ ...p, activityLog: [...(p.activityLog || []), event] }))} prefill={taskPrefill} clientId={clientToEdit?.id} />}
 
                 {activeTab === 'meetings' && <ClientMeetingsTab client={clientToEdit} prefill={meetingPrefill} />}
 

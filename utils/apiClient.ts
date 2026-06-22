@@ -51,3 +51,40 @@ export async function uploadFile(file: File, prefix: string): Promise<string> {
   });
   return result.url;
 }
+
+// Anonymous upload from the public checklist share link. Authorized by the
+// checklist share token rather than a Firebase login. Uploads to Blob, then
+// records the file as a document attached to the given checklist item.
+export async function uploadPublicFile(
+  file: File,
+  opts: { userId: string; shareToken: string; subtaskId: string },
+): Promise<string> {
+  const pathname = `client-uploads/${opts.userId}/${Date.now()}_${file.name}`;
+  const result = await upload(pathname, file, {
+    access: 'public',
+    handleUploadUrl: `${API_BASE}/api/public-files`,
+    clientPayload: JSON.stringify({ userId: opts.userId, shareToken: opts.shareToken }),
+  });
+  await api('public-files', {
+    action: 'attach',
+    userId: opts.userId,
+    shareToken: opts.shareToken,
+    subtaskId: opts.subtaskId,
+    fileUrl: result.url,
+    fileName: file.name,
+    fileSize: file.size,
+    mimeType: file.type,
+  });
+  return result.url;
+}
+
+// Toggle a checklist item from the public share link (no login). Authorized by
+// the checklist share token; the write is performed server-side (Admin SDK).
+export async function togglePublicSubtask(
+  userId: string,
+  shareToken: string,
+  subtaskId: string,
+  isCompleted: boolean,
+): Promise<void> {
+  await api('public-files', { action: 'toggle', userId, shareToken, subtaskId, isCompleted });
+}

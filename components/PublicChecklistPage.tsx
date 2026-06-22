@@ -1,11 +1,12 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '../firebaseConfig';
-import { collection, getDocs, doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { Client, Task, Subtask } from '../types';
+import { Client, Task, Subtask, CrmDocument, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
+import { uploadPublicFile, togglePublicSubtask } from '../utils/apiClient';
 import LinkifiedContent from './LinkifiedContent';
-import { Sun, Moon, CheckCircle2 } from 'lucide-react';
+import { Sun, Moon, CheckCircle2, Paperclip, Download } from 'lucide-react';
 
 interface PublicChecklistPageProps {
     userId: string;
@@ -22,6 +23,10 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
     const [authUser, setAuthUser] = useState<User | null>(null);
     const [authReady, setAuthReady] = useState(false);
     const [isDark, setIsDark] = useState(false);
+    const [clientFiles, setClientFiles] = useState<CrmDocument[]>([]);
+    const [uploadingSubtaskId, setUploadingSubtaskId] = useState<string | null>(null);
+    const subtaskFileInputRef = useRef<HTMLInputElement>(null);
+    const pendingSubtaskRef = useRef<Subtask | null>(null);
 
     // Initialize theme — follow system-wide preference (same key/logic as the app)
     useEffect(() => {
@@ -153,17 +158,78 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
         };
     }, [userId, token]);
 
-    const canEdit = !!authUser;
+    // Subscribe to this client's uploaded files (public read) so we can show
+    // attachments + per-item counts. Anyone with the link may upload, no login.
+    useEffect(() => {
+        if (!clientId) return;
+        const docsQuery = query(
+            collection(db, 'users', userId, 'documents'),
+            where('clientId', '==', clientId),
+        );
+        const unsub = onSnapshot(docsQuery, (snap) => {
+            setClientFiles(
+                snap.docs
+                    .map(d => ({ id: d.id, ...d.data() } as CrmDocument))
+                    .filter(d => d.kind === 'file')
+            );
+        }, (err) => console.error('Files subscription error', err));
+        return unsub;
+    }, [userId, clientId]);
+
+    const filesForSubtask = (subtaskId: string): CrmDocument[] =>
+        clientFiles.filter(f => f.sourceSubtaskId === subtaskId);
+
+    const handleAttachClick = (sub: Subtask) => {
+        if (filesForSubtask(sub.id).length >= MAX_FILES_PER_SUBTASK) {
+            alert(`ניתן לצרף עד ${MAX_FILES_PER_SUBTASK} קבצים לכל פריט.`);
+            return;
+        }
+        pendingSubtaskRef.current = sub;
+        subtaskFileInputRef.current?.click();
+    };
+
+    const handleSubtaskFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        const sub = pendingSubtaskRef.current;
+        pendingSubtaskRef.current = null;
+        if (!file || !sub) return;
+        if (file.size > MAX_UPLOAD_BYTES) { alert('הקובץ גדול מדי. הגודל המרבי הוא 10MB.'); return; }
+        if (file.type && !ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+            alert('סוג קובץ לא נתמך. ניתן להעלות תמונות, PDF, Word ו-Excel.');
+            return;
+        }
+        if (filesForSubtask(sub.id).length >= MAX_FILES_PER_SUBTASK) {
+            alert(`ניתן לצרף עד ${MAX_FILES_PER_SUBTASK} קבצים לכל פריט.`);
+            return;
+        }
+        setUploadingSubtaskId(sub.id);
+        try {
+            await uploadPublicFile(file, { userId, shareToken: token, subtaskId: sub.id });
+        } catch (err: any) {
+            console.error('Public upload failed', err);
+            alert(`העלאת הקובץ נכשלה: ${err?.message || 'שגיאה'}`);
+        } finally {
+            setUploadingSubtaskId(null);
+        }
+    };
+
+    // Anyone with the link may mark items — the write goes through the server
+    // (Admin SDK), authorized by the share token, so no login is required.
+    const canEdit = true;
 
     const handleToggleSubtask = async (subtaskId: string) => {
-        if (!task || updating || !canEdit) return;
+        if (!task || updating) return;
         setUpdating(true);
 
         const prevTask = task;
         const prevTasksArr = allClientTasks;
 
+        const current = (task.subtasks || []).find(s => s.id === subtaskId);
+        const newValue = !current?.isCompleted;
+
         const updatedSubtasks = (task.subtasks || []).map(s =>
-            s.id === subtaskId ? { ...s, isCompleted: !s.isCompleted } : s
+            s.id === subtaskId ? { ...s, isCompleted: newValue } : s
         );
         const updatedTask: Task = { ...task, subtasks: updatedSubtasks };
         const updatedTasksArr = allClientTasks.map(t => t.id === task.id ? updatedTask : t);
@@ -173,14 +239,13 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
         setAllClientTasks(updatedTasksArr);
 
         try {
-            const clientRef = doc(db, 'users', userId, 'clients', clientId);
-            await updateDoc(clientRef, { tasks: updatedTasksArr });
+            await togglePublicSubtask(userId, token, subtaskId, newValue);
         } catch (err) {
             console.error('Failed to update subtask', err);
             // Revert on failure
             setTask(prevTask);
             setAllClientTasks(prevTasksArr);
-            alert('שגיאה בשמירת השינוי. ייתכן שאין לך הרשאות לערוך את הצ\'קליסט הזה.');
+            alert('שגיאה בשמירת השינוי. נסה שוב.');
         } finally {
             setUpdating(false);
         }
@@ -259,37 +324,73 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
                         </div>
                     )}
 
+                    {/* Hidden input shared by all attach buttons */}
+                    <input
+                        ref={subtaskFileInputRef}
+                        type="file"
+                        className="hidden"
+                        accept={ALLOWED_UPLOAD_TYPES.join(',')}
+                        onChange={handleSubtaskFile}
+                    />
+
                     {/* Subtasks */}
                     <div className="p-6">
                         {subtasks.length === 0 ? (
                             <p className="text-center text-gray-500 dark:text-gray-400 py-8">אין פריטים בצ'קליסט</p>
                         ) : (
                             <ul className="space-y-2">
-                                {subtasks.map((sub) => (
+                                {subtasks.map((sub) => {
+                                    const attached = filesForSubtask(sub.id);
+                                    const isUploading = uploadingSubtaskId === sub.id;
+                                    const atLimit = attached.length >= MAX_FILES_PER_SUBTASK;
+                                    return (
                                     <li
                                         key={sub.id}
-                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                                        className={`p-3 rounded-xl border transition-all ${
                                             sub.isCompleted
                                                 ? 'bg-green-50/40 dark:bg-emerald-900/10 border-green-100 dark:border-emerald-900/30'
-                                                : canEdit
-                                                    ? 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50/30 dark:hover:bg-blue-900/20'
-                                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                                                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                                         }`}
                                     >
-                                        <input
-                                            type="checkbox"
-                                            checked={sub.isCompleted}
-                                            onChange={() => handleToggleSubtask(sub.id)}
-                                            disabled={!canEdit || updating}
-                                            className={`form-checkbox h-5 w-5 text-green-600 dark:bg-gray-700 dark:border-gray-600 ${canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
-                                            style={{ borderRadius: '50%' }}
-                                            title={canEdit ? '' : 'התחבר כדי לסמן פריטים'}
-                                        />
-                                        <span className={`flex-1 text-base break-words min-w-0 ${sub.isCompleted ? 'line-through text-gray-500 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
-                                            <LinkifiedContent content={sub.text} />
-                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="checkbox"
+                                                checked={sub.isCompleted}
+                                                onChange={() => handleToggleSubtask(sub.id)}
+                                                disabled={!canEdit || updating}
+                                                className={`form-checkbox h-5 w-5 text-green-600 dark:bg-gray-700 dark:border-gray-600 ${canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
+                                                style={{ borderRadius: '50%' }}
+                                                title={canEdit ? '' : 'התחבר כדי לסמן פריטים'}
+                                            />
+                                            <span className={`flex-1 text-base break-words min-w-0 ${sub.isCompleted ? 'line-through text-gray-500 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
+                                                <LinkifiedContent content={sub.text} />
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAttachClick(sub)}
+                                                disabled={isUploading || atLimit}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
+                                                title={atLimit ? `הגעת למקסימום ${MAX_FILES_PER_SUBTASK} קבצים` : 'צרף קובץ'}
+                                            >
+                                                <Paperclip className="w-4 h-4" />
+                                                {isUploading ? 'מעלה...' : (attached.length > 0 ? `צרף קובץ נוסף (${attached.length})` : 'צרף קובץ')}
+                                            </button>
+                                        </div>
+                                        {attached.length > 0 && (
+                                            <ul className="mt-2 mr-8 space-y-1">
+                                                {attached.map(f => (
+                                                    <li key={f.id} className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+                                                        <a href={f.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 truncate">
+                                                            <Download className="w-3.5 h-3.5 shrink-0" />
+                                                            <span className="truncate">{f.fileName || f.title}</span>
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
                                     </li>
-                                ))}
+                                    );
+                                })}
                             </ul>
                         )}
                     </div>
@@ -297,9 +398,7 @@ export const PublicChecklistPage: React.FC<PublicChecklistPageProps> = ({ userId
 
                 {/* Footer note */}
                 <div className="text-center mt-6 text-xs text-gray-400 dark:text-gray-500">
-                    {canEdit
-                        ? "אתה מחובר למערכת · ניתן לסמן פריטים שהושלמו"
-                        : 'קישור לצפייה בלבד · התחבר למערכת כדי לסמן פריטים'}
+                    ניתן לסמן פריטים שהושלמו ולצרף קבצים לכל פריט
                 </div>
             </div>
         </div>

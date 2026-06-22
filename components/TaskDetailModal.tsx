@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from './Modal';
-import { Task, Subtask } from '../types';
+import { Task, Subtask, CrmDocument, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
 import { LabelSelector } from './LabelSelector';
 import { useAppContext } from '../context/AppContext';
-import { X, ChevronDown, Link } from 'lucide-react';
+import { uploadFile } from '../utils/apiClient';
+import { X, ChevronDown, Link, Paperclip, Download } from 'lucide-react';
 
 const generateSubtaskId = () => `sub_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
 const generateShareToken = () => `${Date.now().toString(36)}${Math.random().toString(36).substr(2, 10)}${Math.random().toString(36).substr(2, 10)}`;
@@ -21,7 +22,7 @@ interface TaskDetailModalProps {
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClose, task, clients, clientId, onClientChange, onSave, userId }) => {
-    const { entityLabels } = useAppContext();
+    const { entityLabels, addDocument, documents } = useAppContext();
     const [text, setText] = useState(task.text);
     const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
     const [labelIds, setLabelIds] = useState<string[]>(task.labelIds || []);
@@ -135,6 +136,67 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
         setSubtasks(subtasks.filter(s => s.id !== id));
     };
 
+    // ── Per-subtask file attachments ──
+    const subtaskFileInputRef = useRef<HTMLInputElement>(null);
+    const pendingSubtaskRef = useRef<Subtask | null>(null);
+    const [uploadingSubtaskId, setUploadingSubtaskId] = useState<string | null>(null);
+
+    const filesForSubtask = (subtaskId: string): CrmDocument[] =>
+        documents.filter(d => d.kind === 'file' && d.clientId === clientId && d.sourceSubtaskId === subtaskId);
+
+    const handleAttachClick = (sub: Subtask) => {
+        if (!clientId) return;
+        if (filesForSubtask(sub.id).length >= MAX_FILES_PER_SUBTASK) {
+            alert(`ניתן לצרף עד ${MAX_FILES_PER_SUBTASK} קבצים לכל פריט.`);
+            return;
+        }
+        pendingSubtaskRef.current = sub;
+        subtaskFileInputRef.current?.click();
+    };
+
+    const handleSubtaskFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        const sub = pendingSubtaskRef.current;
+        pendingSubtaskRef.current = null;
+        if (!file || !sub || !clientId) return;
+        if (file.size > MAX_UPLOAD_BYTES) { alert('הקובץ גדול מדי. הגודל המרבי הוא 10MB.'); return; }
+        if (file.type && !ALLOWED_UPLOAD_TYPES.includes(file.type)) {
+            alert('סוג קובץ לא נתמך. ניתן להעלות תמונות, PDF, Word ו-Excel.');
+            return;
+        }
+        if (filesForSubtask(sub.id).length >= MAX_FILES_PER_SUBTASK) {
+            alert(`ניתן לצרף עד ${MAX_FILES_PER_SUBTASK} קבצים לכל פריט.`);
+            return;
+        }
+        setUploadingSubtaskId(sub.id);
+        try {
+            const fileUrl = await uploadFile(file, `documents/${clientId}`);
+            const now = Date.now();
+            await addDocument({
+                clientId,
+                title: file.name,
+                status: 'sent',
+                kind: 'file',
+                fileUrl,
+                fileName: file.name,
+                fileSize: file.size,
+                mimeType: file.type,
+                uploadedBy: 'team',
+                sourceSubtaskId: sub.id,
+                sourceSubtaskText: sub.text,
+                publicToken: '',
+                createdAt: now,
+                updatedAt: now,
+            } as Omit<CrmDocument, 'id'>);
+        } catch (err: any) {
+            console.error('Subtask file upload failed', err);
+            alert(`העלאת הקובץ נכשלה: ${err?.message || 'שגיאה'}`);
+        } finally {
+            setUploadingSubtaskId(null);
+        }
+    };
+
     const buildUpdatedTask = (overrides?: Partial<Task>): Task => ({
         ...task,
         text: text.trim() || task.text,
@@ -232,33 +294,74 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                         )}
                     </div>
 
+                    {/* Hidden input shared by all subtask attach buttons */}
+                    <input
+                        ref={subtaskFileInputRef}
+                        type="file"
+                        className="hidden"
+                        accept={ALLOWED_UPLOAD_TYPES.join(',')}
+                        onChange={handleSubtaskFile}
+                    />
+
                     {subtasks.length > 0 && (
                         <ul className="space-y-1.5 mb-3">
-                            {subtasks.map((sub) => (
-                                <li key={sub.id} className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-white/5 group">
-                                    <input
-                                        type="checkbox"
-                                        checked={sub.isCompleted}
-                                        onChange={() => handleToggleSubtask(sub.id)}
-                                        className="form-checkbox h-4 w-4 rounded-full text-primary border-gray-300 dark:border-gray-600 cursor-pointer"
-                                        style={{ borderRadius: '50%' }}
-                                    />
-                                    <input
-                                        type="text"
-                                        value={sub.text}
-                                        onChange={(e) => handleEditSubtask(sub.id, e.target.value)}
-                                        className={`flex-1 bg-transparent border-none outline-none text-sm ${sub.isCompleted ? 'line-through text-gray-500' : ''}`}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDeleteSubtask(sub.id)}
-                                        className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="מחק פריט"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
+                            {subtasks.map((sub) => {
+                                const attached = filesForSubtask(sub.id);
+                                const isUploading = uploadingSubtaskId === sub.id;
+                                const atLimit = attached.length >= MAX_FILES_PER_SUBTASK;
+                                return (
+                                <li key={sub.id} className="p-2 rounded-lg bg-gray-50 dark:bg-white/5 group">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={sub.isCompleted}
+                                            onChange={() => handleToggleSubtask(sub.id)}
+                                            className="form-checkbox h-4 w-4 rounded-full text-primary border-gray-300 dark:border-gray-600 cursor-pointer"
+                                            style={{ borderRadius: '50%' }}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={sub.text}
+                                            onChange={(e) => handleEditSubtask(sub.id, e.target.value)}
+                                            className={`flex-1 bg-transparent border-none outline-none text-sm ${sub.isCompleted ? 'line-through text-gray-500' : ''}`}
+                                        />
+                                        {clientId && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAttachClick(sub)}
+                                                disabled={isUploading || atLimit}
+                                                className={`flex items-center gap-1 text-xs px-1.5 py-1 rounded transition-colors disabled:opacity-50 ${attached.length > 0 ? 'text-primary' : 'text-gray-400 hover:text-primary'}`}
+                                                title={atLimit ? `הגעת למקסימום ${MAX_FILES_PER_SUBTASK} קבצים` : 'צרף קובץ'}
+                                            >
+                                                <Paperclip className="w-4 h-4" />
+                                                {isUploading ? '...' : (attached.length > 0 ? `${attached.length}/${MAX_FILES_PER_SUBTASK}` : '')}
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteSubtask(sub.id)}
+                                            className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="מחק פריט"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    {attached.length > 0 && (
+                                        <ul className="mt-1.5 mr-6 space-y-1">
+                                            {attached.map(f => (
+                                                <li key={f.id} className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                                    <a href={f.fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary truncate">
+                                                        <Download className="w-3 h-3 shrink-0" />
+                                                        <span className="truncate">{f.fileName || f.title}</span>
+                                                    </a>
+                                                    {f.uploadedBy === 'client' && <span className="text-green-600 dark:text-green-400">· מהלקוח</span>}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </li>
-                            ))}
+                                );
+                            })}
                         </ul>
                     )}
 
@@ -388,7 +491,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                                     </button>
                                 </div>
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    כל מי שיש לו את הקישור יוכל לראות ולסמן את פריטי הצ'קליסט (ללא גישה לפרטים אחרים).
+                                    כל מי שיש לו את הקישור יוכל לראות את פריטי הצ'קליסט ולצרף קבצים לכל פריט, ללא התחברות (ללא גישה לפרטים אחרים).
                                 </p>
                             </div>
                         )}
