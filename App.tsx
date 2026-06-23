@@ -339,7 +339,52 @@ const Header: React.FC<{
                 </div>
             </div>
 
-            {/* Mobile Menu & Search/Filter Bar */}
+            {/* Mobile Search Bar — always visible (filters live in the drawer, opened from the header button) */}
+            {view === 'clients' && (
+                <div className="md:hidden px-3 pb-2 flex items-center gap-2">
+                    <div className="relative flex-1">
+                        <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-gray-400">
+                            <Search className="w-4 h-4" />
+                        </div>
+                        <input
+                            type="search"
+                            placeholder="חיפוש..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className={`w-full pr-9 ${searchTerm ? 'pl-8' : 'pl-3'} py-1.5 text-sm bg-gray-100/70 dark:bg-base-900/60 border border-transparent rounded-lg focus:bg-white dark:focus:bg-base-900 focus:border-primary/40 focus:ring-2 focus:ring-primary/10 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200`}
+                            disabled={!!dbError}
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => setSearchTerm('')}
+                                className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-gray-400 hover:text-red-500"
+                                title="איפוס חיפוש"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                    {/* View switcher */}
+                    <div className="flex p-0.5 bg-gray-100/70 dark:bg-base-900/60 rounded-lg flex-shrink-0">
+                        <button
+                            onClick={() => onClientViewChange('grid')}
+                            className={`p-1.5 rounded-md transition-all ${clientView === 'grid' ? 'bg-white dark:bg-base-800 shadow-sm text-primary' : 'text-gray-400'}`}
+                            title="תצוגת כרטיסים"
+                        >
+                            <LayoutGrid className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => onClientViewChange('table')}
+                            className={`p-1.5 rounded-md transition-all ${clientView === 'table' ? 'bg-white dark:bg-base-800 shadow-sm text-primary' : 'text-gray-400'}`}
+                            title="תצוגת טבלה"
+                        >
+                            <List className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Desktop Search/Filter Bar */}
             <div className="hidden md:block px-4 pb-4">
 
 
@@ -354,7 +399,7 @@ const Header: React.FC<{
                                 placeholder="חיפוש..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className={`w-full pr-10 ${searchTerm ? 'pl-9' : 'pl-4'} py-2.5 bg-gray-100/50 dark:bg-base-900/50 border-none rounded-xl focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white placeholder-gray-400 transition-all shadow-inner`}
+                                className={`w-full pr-10 ${searchTerm ? 'pl-9' : 'pl-4'} py-2.5 bg-gray-100/50 dark:bg-base-900/50 border border-transparent rounded-xl focus:bg-white dark:focus:bg-base-900 focus:border-primary/40 focus:ring-4 focus:ring-primary/10 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200`}
                                 disabled={!!dbError}
                             />
                             {searchTerm && (
@@ -903,34 +948,6 @@ const AppContent: React.FC<{ user: User; onUserRefresh: () => void }> = ({ user,
                                             <List className="w-5 h-5" />
                                             <span className="text-xs">טבלה</span>
                                         </button>
-                                    </div>
-                                </div>
-
-                                {/* Search */}
-                                <div className="flex flex-col gap-2">
-                                    <label htmlFor="mobile-search" className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">חיפוש לקוח</label>
-                                    <div className="relative group">
-                                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                            <Search className="w-5 h-5" />
-                                        </div>
-                                        <input
-                                            id="mobile-search"
-                                            type="search"
-                                            placeholder="חיפוש..."
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className={`w-full pr-10 ${searchTerm ? 'pl-9' : 'pl-4'} py-2.5 bg-gray-100/50 dark:bg-base-950/50 border-none rounded-xl focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white placeholder-gray-400 transition-all shadow-inner`}
-                                            disabled={!!dbError}
-                                        />
-                                        {searchTerm && (
-                                            <button
-                                                onClick={() => setSearchTerm('')}
-                                                className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-red-500 cursor-pointer"
-                                                title="איפוס חיפוש"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        )}
                                     </div>
                                 </div>
 

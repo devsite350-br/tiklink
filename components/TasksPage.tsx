@@ -511,6 +511,47 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
 
     return (
         <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden h-full flex flex-col">
+            {/* Mobile search bar — always visible (filters live in the drawer, opened from the header button) */}
+            <div className="sm:hidden px-3 py-2 border-b dark:border-gray-700 flex-shrink-0 flex items-center gap-2">
+                <div className="relative flex-1">
+                    <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-gray-400">
+                        <Search className="w-4 h-4" />
+                    </div>
+                    <input
+                        type="search"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder={`חיפוש משימה או ${entityLabels.singular}...`}
+                        className={`w-full pr-9 ${searchTerm ? 'pl-8' : 'pl-3'} py-1.5 text-sm bg-gray-100 dark:bg-gray-700 border border-transparent rounded-lg focus:bg-white dark:focus:bg-gray-800 focus:border-primary/40 focus:ring-2 focus:ring-primary/10 text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200`}
+                    />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-gray-400 hover:text-red-500"
+                            title="איפוס חיפוש"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+                {/* View switcher */}
+                <div className="flex p-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg flex-shrink-0">
+                    <button
+                        onClick={() => { setViewMode('list'); localStorage.setItem('tasksViewMode', 'list'); }}
+                        className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-base-800 shadow-sm text-primary' : 'text-gray-400'}`}
+                        title="תצוגת רשימה"
+                    >
+                        <List className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => { setViewMode('kanban'); localStorage.setItem('tasksViewMode', 'kanban'); }}
+                        className={`p-1.5 rounded-md transition-all ${viewMode === 'kanban' ? 'bg-white dark:bg-base-800 shadow-sm text-primary' : 'text-gray-400'}`}
+                        title="תצוגת קנבן"
+                    >
+                        <Columns3 className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
             <header className="hidden sm:flex p-3 sm:p-4 border-b dark:border-gray-700 flex-shrink-0 items-center min-h-[64px] transition-all gap-3">
                 {isMobileSearchOpen ? (
                     <div className="flex-1 flex items-center gap-2 animate-fadeIn w-full">
@@ -1344,33 +1385,6 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                                         <Columns3 className="w-5 h-5" />
                                         <span className="text-xs">קנבן</span>
                                     </button>
-                                </div>
-                            </div>
-
-                            {/* Search */}
-                            <div className="flex flex-col gap-2">
-                                <label htmlFor="mobile-task-search" className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">חיפוש</label>
-                                <div className="relative group">
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400 group-focus-within:text-primary transition-colors">
-                                        <Search className="w-5 h-5" />
-                                    </div>
-                                    <input
-                                        id="mobile-task-search"
-                                        type="search"
-                                        placeholder={`חיפוש משימה או ${entityLabels.singular}...`}
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className={`w-full pr-10 ${searchTerm ? 'pl-9' : 'pl-4'} py-2.5 bg-gray-100/50 dark:bg-base-950/50 border-none rounded-xl focus:ring-2 focus:ring-primary/50 text-gray-900 dark:text-white placeholder-gray-400 transition-all shadow-inner`}
-                                    />
-                                    {searchTerm && (
-                                        <button
-                                            onClick={() => setSearchTerm('')}
-                                            className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 hover:text-red-500 cursor-pointer"
-                                            title="איפוס חיפוש"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    )}
                                 </div>
                             </div>
 
