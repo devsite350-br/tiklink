@@ -106,7 +106,7 @@ export const DocumentShareButtons: React.FC<DocumentShareButtonsProps> = ({ docu
             {/* SMS */}
             <a
                 href={`sms:${clientPhone || ''}?body=${encodeURIComponent(shareMessage)}`}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/20 dark:text-purple-400 dark:hover:bg-purple-900/30 transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-50 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/20 dark:text-orange-400 dark:hover:bg-orange-900/30 transition-all"
                 title="שלח ב-SMS"
             >
                 <Smartphone className="w-3.5 h-3.5" />

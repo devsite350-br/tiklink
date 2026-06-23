@@ -103,10 +103,10 @@ const LabelsManager = () => {
     // (displayed above the labels list)
     const { labels, addLabel, updateLabel, deleteLabel, clients, entityLabels } = useAppContext();
     const [newLabelName, setNewLabelName] = useState('');
-    const [newLabelColor, setNewLabelColor] = useState('#473472');
+    const [newLabelColor, setNewLabelColor] = useState('#2f8f74');
 
     const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
-    const [editedLabelData, setEditedLabelData] = useState<Omit<LabelDefinition, 'id'>>({ name: '', color: '#473472' });
+    const [editedLabelData, setEditedLabelData] = useState<Omit<LabelDefinition, 'id'>>({ name: '', color: '#2f8f74' });
 
     const filteredLabels = useMemo(() => {
         return labels.filter(l => !l.module || l.module === 'client');
@@ -117,7 +117,7 @@ const LabelsManager = () => {
         if (newLabelName.trim()) {
             addLabel(newLabelName.trim(), newLabelColor, 'client');
             setNewLabelName('');
-            setNewLabelColor('#473472');
+            setNewLabelColor('#2f8f74');
         }
     };
 

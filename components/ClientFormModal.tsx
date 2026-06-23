@@ -870,13 +870,13 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
 
                 {activeTab === 'ai' && (
                     <div className="space-y-6 p-1">
-                        <div className={`p-6 rounded-2xl border ${aiStatus === 'completed' ? 'bg-purple-50 border-purple-100 dark:bg-purple-900/10 dark:border-purple-500/20' :
+                        <div className={`p-6 rounded-2xl border ${aiStatus === 'completed' ? 'bg-teal-50 border-teal-100 dark:bg-teal-900/10 dark:border-teal-500/20' :
                             aiStatus === 'processing' ? 'bg-yellow-50 border-yellow-100 dark:bg-yellow-900/10 dark:border-yellow-500/20' :
                                 aiStatus === 'error' ? 'bg-red-50 border-red-100 dark:bg-red-900/10 dark:border-red-500/20' :
                                     'bg-gray-50 border-gray-100 dark:bg-base-900/50 dark:border-white/10'
                             }`}>
                             <div className="flex items-center gap-3 mb-4">
-                                <div className={`p-2 rounded-lg text-2xl ${aiStatus === 'completed' ? 'bg-purple-100 dark:bg-purple-400/20' :
+                                <div className={`p-2 rounded-lg text-2xl ${aiStatus === 'completed' ? 'bg-teal-100 dark:bg-teal-400/20' :
                                     aiStatus === 'processing' ? 'bg-yellow-100 dark:bg-yellow-400/20' :
                                         aiStatus === 'error' ? 'bg-red-100 dark:bg-red-400/20' :
                                             'bg-gray-200 dark:bg-white/10'

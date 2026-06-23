@@ -49,7 +49,7 @@ const KIND_META: Record<TLKind, { icon: React.ReactNode; dot: string; badge: str
   comment:           { icon: <IconComment />,     dot: 'bg-blue-500',     badge: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
   status_change:     { icon: <IconStatus />,      dot: 'bg-amber-500',    badge: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
   task_created:      { icon: <IconTask />,        dot: 'bg-green-500',    badge: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
-  meeting:           { icon: <IconMeeting />,     dot: 'bg-purple-500',   badge: 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+  meeting:           { icon: <IconMeeting />,     dot: 'bg-sky-500',   badge: 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300' },
   document:          { icon: <IconDocument />,    dot: 'bg-rose-500',     badge: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' },
   user_assigned:     { icon: <IconUser />,        dot: 'bg-cyan-500',     badge: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300' },
   whatsapp_inbound:  { icon: <IconWhatsAppIn />,  dot: 'bg-emerald-500',  badge: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },

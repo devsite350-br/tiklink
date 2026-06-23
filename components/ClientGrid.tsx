@@ -210,7 +210,7 @@ const ClientCard: React.FC<{ client: Client, onCardClick: (client: Client) => vo
                 </div>
 
                 {showAiSummary && client.aiSummary && (
-                    <div className="mt-1.5 p-1.5 bg-purple-50/50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-500/20 rounded-lg text-[11px] text-gray-600 dark:text-gray-300 line-clamp-2 italic">
+                    <div className="mt-1.5 p-1.5 bg-teal-50/50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-500/20 rounded-lg text-[11px] text-gray-600 dark:text-gray-300 line-clamp-2 italic">
                         <Sparkles className="w-4 h-4 inline-block mr-1" />{client.aiSummary}
                     </div>
                 )}

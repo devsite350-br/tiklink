@@ -398,7 +398,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onProfileUpdate }) => 
                 {/* Security Section */}
                 <section className="bg-white dark:bg-base-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-purple-600 dark:text-purple-400">
+                        <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg text-teal-600 dark:text-teal-400">
                             <Lock className="w-6 h-6" />
                         </div>
                         <h2 className="text-xl font-bold text-gray-800 dark:text-white">אבטחה</h2>
@@ -505,7 +505,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onProfileUpdate }) => 
             {isMobile && !isInstalled && !installDone && (installPrompt || isIOS) && (
                 <section className="bg-white dark:bg-base-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-white/5">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-violet-50 dark:bg-violet-900/20 rounded-lg text-violet-600 dark:text-violet-400">
+                        <div className="p-2 bg-sky-50 dark:bg-sky-900/20 rounded-lg text-sky-600 dark:text-sky-400">
                             <Download className="w-6 h-6" />
                         </div>
                         <div>

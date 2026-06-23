@@ -264,7 +264,7 @@ const Header: React.FC<{
                         {isDark ? (
                             <Sun className="w-5 h-5 text-amber-400" />
                         ) : (
-                            <Moon className="w-5 h-5 text-indigo-400" />
+                            <Moon className="w-5 h-5 text-sky-400" />
                         )}
                     </button>
 
@@ -322,7 +322,7 @@ const Header: React.FC<{
                                         </>
                                     ) : (
                                         <>
-                                            <Moon className="w-4 h-4 text-indigo-400" />
+                                            <Moon className="w-4 h-4 text-sky-400" />
                                             מצב לילה
                                         </>
                                     )}

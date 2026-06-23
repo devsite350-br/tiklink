@@ -14,11 +14,11 @@ interface DayColumnDef {
 
 const DAY_COLUMNS: DayColumnDef[] = [
     { id: 0, name: 'יום ראשון', color: '#3b82f6' },
-    { id: 1, name: 'יום שני', color: '#8b5cf6' },
+    { id: 1, name: 'יום שני', color: '#14b8a6' },
     { id: 2, name: 'יום שלישי', color: '#ec4899' },
     { id: 3, name: 'יום רביעי', color: '#f59e0b' },
     { id: 4, name: 'יום חמישי', color: '#10b981' },
-    { id: 5, name: 'יום שישי', color: '#6366f1' },
+    { id: 5, name: 'יום שישי', color: '#f97316' },
     { id: 6, name: 'יום שבת', color: '#64748b' },
 ];
 

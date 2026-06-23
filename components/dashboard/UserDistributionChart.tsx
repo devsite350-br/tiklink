@@ -13,7 +13,7 @@ interface UserDistributionChartProps {
     data: UserData[];
 }
 
-const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#14b8a6'];
+const COLORS = ['#0ea5e9', '#84cc16', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#ef4444', '#14b8a6'];
 
 const createCustomTooltip = (entityPlural: string) => ({ active, payload }: any) => {
     if (active && payload && payload.length) {

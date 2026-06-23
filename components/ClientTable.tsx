@@ -366,7 +366,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({ clients, onRowClick })
                                             )}
                                             {showAiSummary && (
                                                 <td className="px-4 py-3 text-center text-sm">
-                                                    {client.aiSummary ? <span className="text-purple-600 dark:text-purple-400 italic truncate max-w-[150px] inline-flex items-center gap-1" title={client.aiSummary}><Sparkles className="w-4 h-4" /> {client.aiSummary}</span> : '-'}
+                                                    {client.aiSummary ? <span className="text-teal-600 dark:text-teal-400 italic truncate max-w-[150px] inline-flex items-center gap-1" title={client.aiSummary}><Sparkles className="w-4 h-4" /> {client.aiSummary}</span> : '-'}
                                                 </td>
                                             )}
                                             {showUsers && (
@@ -578,7 +578,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({ clients, onRowClick })
                                     {showAiSummary && client.aiSummary && (
                                         <div className="py-2 border-b border-gray-50 dark:border-white/5 last:border-0">
                                             <span className="block font-medium text-gray-500 dark:text-gray-400 mb-1">סיכום AI:</span>
-                                            <span className="text-xs text-purple-600 dark:text-purple-400 italic line-clamp-3">
+                                            <span className="text-xs text-teal-600 dark:text-teal-400 italic line-clamp-3">
                                                 <Sparkles className="w-3.5 h-3.5 inline-block mr-1" />{client.aiSummary}
                                             </span>
                                         </div>

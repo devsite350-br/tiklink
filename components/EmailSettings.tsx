@@ -280,9 +280,9 @@ export const EmailSettings: React.FC = () => {
       {selectedType === 'resend' && (
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-base-800 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-3"
-               style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.07), rgba(99,102,241,0.01))' }}>
+               style={{ background: 'linear-gradient(135deg, rgba(47,143,116,0.08), rgba(47,143,116,0.01))' }}>
             <div className="w-9 h-9 rounded-lg flex items-center justify-center text-sm font-black text-white"
-                 style={{ background: 'linear-gradient(135deg, #6366F1, #4338CA)' }}>
+                 style={{ background: 'linear-gradient(135deg, #3bb491, #234a63)' }}>
               Re
             </div>
             <div>
@@ -292,12 +292,12 @@ export const EmailSettings: React.FC = () => {
           </div>
 
           <div className="px-5 pt-4 pb-2">
-            <div className="rounded-lg border border-indigo-100 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 p-4 space-y-2 text-xs text-indigo-800 dark:text-indigo-300">
-              <p className="font-bold text-sm text-indigo-900 dark:text-indigo-200">איך להתחיל עם Resend?</p>
+            <div className="rounded-lg border border-teal-100 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 p-4 space-y-2 text-xs text-teal-800 dark:text-teal-300">
+              <p className="font-bold text-sm text-teal-900 dark:text-teal-200">איך להתחיל עם Resend?</p>
               <ol className="space-y-1.5 list-decimal list-inside leading-relaxed">
-                <li>היכנס לאתר <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-indigo-600">resend.com</a> וצור חשבון חינמי.</li>
+                <li>היכנס לאתר <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-teal-600">resend.com</a> וצור חשבון חינמי.</li>
                 <li>עבור ל-<b>Domains</b> וחבר את הדומיין שלך (נדרשת הוספת רשומות DNS אצל ספק הדומיין שלך).</li>
-                <li>לאחר אימות הדומיין, עבור ל-<a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-indigo-600">resend.com/api-keys</a> וצור API Key חדש.</li>
+                <li>לאחר אימות הדומיין, עבור ל-<a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-teal-600">resend.com/api-keys</a> וצור API Key חדש.</li>
                 <li>הזן את ה-API Key ואת כתובת השולח (חייבת להיות מהדומיין שחיברת) למטה.</li>
               </ol>
             </div>
@@ -337,7 +337,7 @@ export const EmailSettings: React.FC = () => {
                 </button>
               </div>
               <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
-                את ה-API Key תמצא ב-<a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline text-indigo-500 hover:text-indigo-700">resend.com/api-keys</a>
+                את ה-API Key תמצא ב-<a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline text-teal-500 hover:text-teal-700">resend.com/api-keys</a>
               </p>
             </div>
             <div className="flex items-center gap-3 pt-1">
