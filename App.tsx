@@ -19,10 +19,9 @@ import { db } from './firebaseConfig';
 import { ClientExportModal } from './components/ClientExportModal';
 import { ClientImportModal } from './components/ClientImportModal';
 import { UserAvatar } from './components/UserAvatar';
-import { DashboardPage } from './components/DashboardPage';
 import { PublicDocumentPage } from './components/PublicDocumentPage';
 import { PublicChecklistPage } from './components/PublicChecklistPage';
-import { LayoutDashboard, Users, ClipboardList, Calendar, Settings, Sun, Moon, User as UserIcon, ChevronDown, Search, ArrowUpDown, SortAsc, SortDesc, Filter, Tag, Upload, Download, LayoutGrid, List, Plus, AlertTriangle, LogOut, Menu, X, SlidersHorizontal } from 'lucide-react';
+import { Users, ClipboardList, Calendar, Settings, Sun, Moon, User as UserIcon, ChevronDown, Search, ArrowUpDown, SortAsc, SortDesc, Filter, Tag, Upload, Download, LayoutGrid, List, Plus, AlertTriangle, LogOut, Menu, X, SlidersHorizontal } from 'lucide-react';
 import { NotificationCenter } from './components/NotificationCenter';
 import { useNotifications } from './hooks/useNotifications';
 import { CrmNotification } from './types';
@@ -78,7 +77,7 @@ const SuperAdminGateway: React.FC = () => {
     );
 };
 
-type View = 'dashboard' | 'clients' | 'tasks' | 'meetings' | 'settings' | 'team' | 'profile';
+type View = 'clients' | 'tasks' | 'meetings' | 'settings' | 'team' | 'profile';
 type ClientView = 'grid' | 'table';
 
 const LoadingSpinner: React.FC = () => (
@@ -159,7 +158,6 @@ const Header: React.FC<{
     };
 
     const navItems: { id: View, label: string, icon: React.ReactNode }[] = [
-        { id: 'dashboard', label: 'דשבורד', icon: <LayoutDashboard className="w-5 h-5" /> },
         { id: 'clients', label: entityLabels.plural, icon: <Users className="w-5 h-5" /> },
         ...(visibilitySettings?.tasks?.enabled !== false ? [{ id: 'tasks' as View, label: 'משימות', icon: <ClipboardList className="w-5 h-5" /> }] : []),
         { id: 'settings', label: 'הגדרות', icon: <Settings className="w-5 h-5" /> },
@@ -818,7 +816,6 @@ const AppContent: React.FC<{ user: User; onUserRefresh: () => void }> = ({ user,
                     </div>
                 ) : (
                     <>
-                        {view === 'dashboard' && <DashboardPage onClientClick={openClientModal} />}
                         {view === 'tasks' && <TasksPage onClientClick={openClientModal} isMobileSidebarOpen={isMobileSidebarOpen} onCloseMobileSidebar={() => setIsMobileSidebarOpen(false)} />}
                         {view === 'meetings' && <MeetingsPage onClientClick={openClientModal} />}
                         {view === 'settings' && <div className="overflow-y-auto overflow-x-hidden h-full bg-white dark:bg-base-800 rounded-lg shadow"><ManageFieldsPage /></div>}
