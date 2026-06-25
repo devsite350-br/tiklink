@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode, useCallback, useState, useEffect, useMemo } from 'react';
-import { Client, CustomFieldDefinition, Automation, AutomationTrigger, StatusDefinition, LabelDefinition, CustomFieldType, LeadSource, ImportBatch, VisibilitySettings, DEFAULT_VISIBILITY_SETTINGS, Meeting, ConnectedCalendar, CrmDocument, DocumentContent, DocumentTemplate, UserPlan, PLAN_LIMITS, WhatsAppSettings, EmailSettings, EntityLabel, EntityLabels, getEntityLabels } from '../types';
+import { Client, CustomFieldDefinition, Automation, AutomationTrigger, StatusDefinition, LabelDefinition, CustomFieldType, LeadSource, ImportBatch, VisibilitySettings, DEFAULT_VISIBILITY_SETTINGS, Meeting, ConnectedCalendar, CrmDocument, DocumentContent, DocumentTemplate, UserPlan, PLAN_LIMITS, WhatsAppSettings, EmailSettings, EntityLabel, EntityLabels, getEntityLabels, isSystemFieldId } from '../types';
 import { db, auth } from '../firebaseConfig';
 import { collection, onSnapshot, doc, addDoc, setDoc, deleteDoc, writeBatch, getDocs, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { api } from '../utils/apiClient';
@@ -266,6 +266,9 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
             const seenNames = new Map<string, string>();
             const duplicateIds: string[] = [];
             fieldsSnap.docs.forEach(d => {
+              // System fields are keyed by id (and may exist as order-only
+              // placeholders with no name); never dedupe them by name.
+              if (isSystemFieldId(d.id)) return;
               const name = d.data().name;
               if (seenNames.has(name)) {
                 duplicateIds.push(d.id);
@@ -494,7 +497,7 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
       result = result.replace(/{{מקור הגעה}}/g, source ? source.name : '');
       result = result.replace(/{{משתמש מוקצה}}/g, assignedMember ? (assignedMember.displayName || assignedMember.email || '') : '');
 
-      customFields.forEach(field => {
+      customFields.filter(field => !isSystemFieldId(field.id)).forEach(field => {
         const fieldValue = client.customFields?.[field.id] || client.customFields?.[field.name] || '';
         result = result.replace(new RegExp(`{{${field.name}}}`, 'g'), String(fieldValue));
       });

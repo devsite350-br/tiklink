@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { useAppContext } from '../context/AppContext';
-import { Client, CustomFieldType, ImportBatch } from '../types';
+import { Client, CustomFieldType, ImportBatch, isSystemFieldId } from '../types';
 import * as XLSX from 'xlsx';
 import { UserAvatar } from './UserAvatar';
 import { Smartphone, Calendar as CalendarIcon, Link, Hash, FileText, User, FolderOpen, Eye, CheckCircle2, Check, ChevronRight, Info, AlertTriangle, Upload, X, CircleCheck, XCircle, Undo2 } from 'lucide-react';
@@ -287,7 +287,7 @@ export const ClientImportModal: React.FC<ClientImportModalProps> = ({ isOpen, on
             { id: '__status__', name: 'סטטוס', type: 'status' },
             { id: '__notes__', name: 'הערות', type: 'notes' },
         ];
-        customFields.forEach(cf => {
+        customFields.filter(cf => !isSystemFieldId(cf.id)).forEach(cf => {
             fields.push({ id: cf.id, name: cf.name, type: cf.type });
         });
         return fields;

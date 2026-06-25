@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Client, CustomFieldDefinition, StatusDefinition } from '../types';
+import { Client, CustomFieldDefinition, StatusDefinition, isSystemFieldId } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { Modal } from './Modal';
 import { Download } from 'lucide-react';
@@ -15,7 +15,7 @@ export const ClientExportModal: React.FC<ClientExportModalProps> = ({ isOpen, on
     const [endDate, setEndDate] = useState('');
     const [selectedStatusIds, setSelectedStatusIds] = useState<Set<string>>(new Set(statuses.map(s => s.id)));
     // Initialize with name, status and ALL custom fields (which typically includes phone/email)
-    const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set(['name', 'status', ...customFields.map(f => f.id)]));
+    const [selectedFields, setSelectedFields] = useState<Set<string>>(new Set(['name', 'status', ...customFields.filter(f => !isSystemFieldId(f.id)).map(f => f.id)]));
     const [includeNotes, setIncludeNotes] = useState(true);
 
     const toggleStatus = (id: string) => {
@@ -30,7 +30,7 @@ export const ClientExportModal: React.FC<ClientExportModalProps> = ({ isOpen, on
         if (isOpen) {
             setSelectedStatusIds(new Set(statuses.map(s => s.id)));
             // Select all fields including name, status, notes and all custom fields
-            setSelectedFields(new Set(['name', 'status', ...customFields.map(f => f.id)]));
+            setSelectedFields(new Set(['name', 'status', ...customFields.filter(f => !isSystemFieldId(f.id)).map(f => f.id)]));
             setIncludeNotes(true);
         }
     }, [isOpen, statuses, customFields]);
@@ -68,7 +68,7 @@ export const ClientExportModal: React.FC<ClientExportModalProps> = ({ isOpen, on
         if (selectedFields.has('status')) headers.push('סטטוס');
 
         // Dynamic Custom Fields (Phone and Email are usually here)
-        customFields.forEach(field => {
+        customFields.filter(field => !isSystemFieldId(field.id)).forEach(field => {
             if (selectedFields.has(field.id)) headers.push(field.name);
         });
 
@@ -84,7 +84,7 @@ export const ClientExportModal: React.FC<ClientExportModalProps> = ({ isOpen, on
             if (selectedFields.has('name')) row.push(`"${(client.name || '').replace(/"/g, '""')}"`);
             if (selectedFields.has('status')) row.push(`"${(client.status || '').replace(/"/g, '""')}"`);
 
-            customFields.forEach(field => {
+            customFields.filter(field => !isSystemFieldId(field.id)).forEach(field => {
                 if (selectedFields.has(field.id)) {
                     // Check field ID or Name for value. Try both ID first.
                     const val = client.customFields[field.id] !== undefined ? client.customFields[field.id] : (client.customFields[field.name] || '');
@@ -195,7 +195,7 @@ export const ClientExportModal: React.FC<ClientExportModalProps> = ({ isOpen, on
                             />
                             <span>הערות</span>
                         </label>
-                        {customFields.map(field => (
+                        {customFields.filter(field => !isSystemFieldId(field.id)).map(field => (
                             <label key={field.id} className="flex items-center gap-2 text-sm p-2 rounded hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer">
                                 <input
                                     type="checkbox"

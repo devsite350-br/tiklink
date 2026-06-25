@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GripVertical, Pencil, Trash2, Plus, Image, FileText } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { CustomFieldDefinition, CustomFieldType, CUSTOM_FIELD_TYPE_LIST, StatusDefinition, LabelDefinition, ModuleVisibility, VisibilitySettings, SYSTEM_FIELD_DEFINITIONS } from '../types';
+import { CustomFieldDefinition, CustomFieldType, CUSTOM_FIELD_TYPE_LIST, StatusDefinition, LabelDefinition, ModuleVisibility, VisibilitySettings, SYSTEM_FIELD_DEFINITIONS, isSystemFieldId } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -419,11 +419,18 @@ const SortableFieldItem: React.FC<SortableFieldItemProps> = ({ field, isEditing,
     const { entityLabels } = useAppContext();
     const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: field.id });
     const style = { transform: CSS.Transform.toString(transform), transition };
+    const systemDef = SYSTEM_FIELD_DEFINITIONS.find(sf => sf.id === field.id);
+    const isSystem = !!systemDef;
+    // Reorder-only system fields (status / labels / user / lead-source / name)
+    // can only be dragged to change their order on the card. Their visibility is
+    // managed in the matching module settings, so we hide the edit/show-hide and
+    // the (misleading) type chip for them.
+    const isReorderOnly = !!systemDef?.reorderOnly;
 
     return (
         <li ref={setNodeRef} style={style} className="bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/5 p-3 rounded-xl shadow-sm flex items-center gap-2">
             <div {...attributes} {...listeners}><DragHandle /></div>
-            {isEditing ? (
+            {isEditing && !isReorderOnly ? (
                 <div className="flex-grow space-y-2">
                     <input
                         type="text"
@@ -456,14 +463,16 @@ const SortableFieldItem: React.FC<SortableFieldItemProps> = ({ field, isEditing,
                 <div className="flex-grow flex justify-between items-center">
                     <div>
                         <span className="font-semibold">{field.name}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 bg-gray-200/50 dark:bg-white/10 px-2 py-0.5 rounded-full">{field.type}</span>
-                        {SYSTEM_FIELD_DEFINITIONS.some(sf => sf.id === field.id) && <span className="text-xs text-blue-500 bg-blue-100/50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full mr-2">מערכת</span>}
+                        {!isReorderOnly && <span className="text-xs text-gray-500 dark:text-gray-400 mr-2 bg-gray-200/50 dark:bg-white/10 px-2 py-0.5 rounded-full">{field.type}</span>}
+                        {isSystem && <span className="text-xs text-blue-500 bg-blue-100/50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full mr-2">מערכת</span>}
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => onStartEdit(field)} className="text-primary hover:opacity-80" aria-label={`ערוך את השדה ${field.name}`}>
-                            <Pencil className="w-5 h-5" />
-                        </button>
-                        {!SYSTEM_FIELD_DEFINITIONS.some(sf => sf.id === field.id) && (
+                        {!isReorderOnly && (
+                            <button onClick={() => onStartEdit(field)} className="text-primary hover:opacity-80" aria-label={`ערוך את השדה ${field.name}`}>
+                                <Pencil className="w-5 h-5" />
+                            </button>
+                        )}
+                        {!isSystem && (
                             <button onClick={() => onDelete(field.id)} className="text-red-500 hover:text-red-700" aria-label={`מחק את השדה ${field.name}`}>
                                 <Trash2 className="w-5 h-5" />
                             </button>
@@ -497,10 +506,12 @@ const FieldsManager = () => {
                     showInGrid: false,
                     showInList: false,
                     showInCard: true,
-                    order: 9999,
+                    order: sf.defaultOrder,
                 } as CustomFieldDefinition);
             } else {
-                // Always use the canonical name/type from SYSTEM_FIELD_DEFINITIONS
+                // Always use the canonical name/type from SYSTEM_FIELD_DEFINITIONS.
+                // A system field may exist only as an order placeholder (created by a
+                // previous reorder) without a name/type of its own.
                 existing.name = sf.name;
                 existing.type = sf.type;
             }
@@ -550,7 +561,7 @@ const FieldsManager = () => {
         <div className="space-y-6">
             <div>
                 <h3 className="text-lg font-medium mb-2">ניהול שדות</h3>
-                <p className="text-sm text-gray-500 mb-4">גרור שדות כדי לקבוע את סדר הופעתם במערכת. שדות מערכת מסומנים בתווית כחולה.</p>
+                <p className="text-sm text-gray-500 mb-4">גרור שדות כדי לקבוע את סדר הופעתם בכרטיס הלקוח. שדות מערכת מסומנים בתווית כחולה — ניתן לשנות את סדר הצגתם, התצוגה שלהם נשלטת בהגדרות המתאימות.</p>
                 {currentFields.length > 0 ? (
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                         <SortableContext items={currentFields.map(f => f.id)} strategy={verticalListSortingStrategy}>
@@ -648,7 +659,7 @@ const DocumentsSettings = () => {
             { key: entityLabels.templateNameVar, label: entityLabels.nameOf },
             { key: '{{תאריך היום}}', label: 'תאריך היום' },
         ];
-        customFields.forEach(f => {
+        customFields.filter(f => !isSystemFieldId(f.id)).forEach(f => {
             fields.push({ key: `{{${f.name}}}`, label: f.name });
         });
         return fields;

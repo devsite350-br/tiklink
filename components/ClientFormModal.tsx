@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Modal } from './Modal';
 import { useAppContext } from '../context/AppContext';
-import { Client, CustomFieldType, Task, ActivityEvent } from '../types';
+import { Client, CustomFieldType, Task, ActivityEvent, SYSTEM_FIELD_DEFINITIONS, isSystemFieldId } from '../types';
 import { BulkTaskModal } from './BulkTaskModal';
 import { TaskDetailModal } from './TaskDetailModal';
 import { StatusSelector } from './StatusSelector';
@@ -391,6 +391,19 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
 
     const visibleCustomFields = useMemo(() => customFields.filter(f => f.showInCard ?? true), [customFields]);
 
+    // Display order for every field on the card. Custom fields always carry a
+    // stored `order`; system fields use their stored order once the user has
+    // reordered them in the field-management screen, otherwise their default.
+    const orderOf = useMemo(() => {
+        const stored: Record<string, number> = {};
+        customFields.forEach(f => { stored[f.id] = f.order ?? 0; });
+        return (id: string): number => {
+            if (id in stored) return stored[id];
+            const sd = SYSTEM_FIELD_DEFINITIONS.find(sf => sf.id === id);
+            return sd ? sd.defaultOrder : 0;
+        };
+    }, [customFields]);
+
     const showStatuses = visibilitySettings.statuses.showInCard;
     const showLabels = visibilitySettings.labels.showInCard;
     const showUsers = visibilitySettings.users.showInCard;
@@ -682,173 +695,190 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
                         {/* ... (details form inputs) ... */}
                         {/* REMOVED PREVIOUS AI SUMMARY BOX FROM HERE */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="group/field">
-                            <label className="flex items-center gap-1.5 text-sm font-medium">
-                                {entityLabels.nameOf}
-                                {clientData.name && (
-                                    <button type="button" onClick={() => copyToClipboard(clientData.name, 'name')} className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="העתק">
-                                        {copiedField === 'name' ? (
-                                            <Check className="w-3.5 h-3.5 text-green-400" />
-                                        ) : (
-                                            <Copy className="w-3.5 h-3.5 text-gray-400" />
-                                        )}
-                                    </button>
-                                )}
-                            </label>
-                            <input type="text" value={clientData.name} onChange={e => setClientData(p => ({ ...p, name: e.target.value }))} required className="w-full mt-1 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all shadow-sm" />
-                        </div>
-                        {showStatuses && (
-                            <div>
-                                <label className="block text-sm font-medium">סטטוס</label>
-                                <StatusSelector value={clientData.status} onChange={handleStatusChange} />
-                            </div>
-                        )}
-                        {showLabels && (
-                            <div>
-                                <label className="block text-sm font-medium">תגיות</label>
-                                <div className="mt-1">
-                                    <LabelSelector selectedLabelIds={clientData.labelIds || []} onChange={val => setClientData(p => ({ ...p, labelIds: val }))} module="client" />
-                                </div>
-                            </div>
-                        )}
-                        {/* Assignee Field */}
-                        {showUsers && (
-                            <div>
-                                <label className="block text-sm font-medium mb-1">משתמש</label>
-                                <div className="relative" ref={assigneeDropdownRef}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-                                        className="w-full flex items-center gap-3 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none transition-all shadow-sm text-right"
-                                    >
-                                        {clientData.assignedTo ? (
-                                            (() => {
-                                                const member = teamMembers.find(m => m.id === clientData.assignedTo);
-                                                return member ? (
-                                                    <>
-                                                        <UserAvatar name={member.displayName || member.email} photoUrl={member.photoUrl} size="xs" showTooltip={false} />
-                                                        <span className="text-sm text-gray-700 dark:text-gray-200">{member.displayName || member.email}</span>
-                                                    </>
+                        {(() => {
+                            // Build every in-grid card field as { id, node }, then render in the
+                            // order configured in the field-management screen (orderOf).
+                            const fieldNodes: { id: string; node: React.ReactNode }[] = [];
+
+                            fieldNodes.push({ id: '__name', node: (
+                                <div className="group/field">
+                                    <label className="flex items-center gap-1.5 text-sm font-medium">
+                                        {entityLabels.nameOf}
+                                        {clientData.name && (
+                                            <button type="button" onClick={() => copyToClipboard(clientData.name, 'name')} className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="העתק">
+                                                {copiedField === 'name' ? (
+                                                    <Check className="w-3.5 h-3.5 text-green-400" />
                                                 ) : (
-                                                    <span className="text-sm text-gray-400">משתמש לא נמצא</span>
-                                                );
-                                            })()
-                                        ) : (
-                                            <>
-                                                <div className="w-6 h-6 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
-                                                    <Plus className="w-3 h-3 text-gray-400" />
-                                                </div>
-                                                <span className="text-sm text-gray-400">הקצה למשתמש...</span>
-                                            </>
-                                        )}
-                                        <ChevronDown className="w-4 h-4 text-gray-400 mr-auto" />
-                                    </button>
-                                    {showAssigneeDropdown && (
-                                        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-base-800 border border-gray-200 dark:border-white/10 rounded-xl shadow-xl max-h-60 overflow-y-auto">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleAssigneeChange('')}
-                                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-right border-b border-gray-100 dark:border-white/5"
-                                            >
-                                                <div className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center">
-                                                    <X className="w-3 h-3 text-gray-400" />
-                                                </div>
-                                                <span className="text-sm text-gray-500">ללא הקצאה</span>
+                                                    <Copy className="w-3.5 h-3.5 text-gray-400" />
+                                                )}
                                             </button>
-                                            {teamMembers.map(member => (
-                                                <button
-                                                    key={member.id}
-                                                    type="button"
-                                                    onClick={() => handleAssigneeChange(member.id)}
-                                                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-right ${clientData.assignedTo === member.id ? 'bg-primary/5 dark:bg-primary/10' : ''
-                                                        }`}
-                                                >
-                                                    <UserAvatar name={member.displayName || member.email} photoUrl={member.photoUrl} size="xs" showTooltip={false} />
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{member.displayName || member.email?.split('@')[0]}</span>
-                                                        <span className="text-[11px] text-gray-400">{member.email}</span>
+                                        )}
+                                    </label>
+                                    <input type="text" value={clientData.name} onChange={e => setClientData(p => ({ ...p, name: e.target.value }))} required className="w-full mt-1 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all shadow-sm" />
+                                </div>
+                            ) });
+
+                            if (showStatuses) fieldNodes.push({ id: '__status', node: (
+                                <div>
+                                    <label className="block text-sm font-medium">סטטוס</label>
+                                    <StatusSelector value={clientData.status} onChange={handleStatusChange} />
+                                </div>
+                            ) });
+
+                            if (showLabels) fieldNodes.push({ id: '__labels', node: (
+                                <div>
+                                    <label className="block text-sm font-medium">תגיות</label>
+                                    <div className="mt-1">
+                                        <LabelSelector selectedLabelIds={clientData.labelIds || []} onChange={val => setClientData(p => ({ ...p, labelIds: val }))} module="client" />
+                                    </div>
+                                </div>
+                            ) });
+
+                            if (showUsers) fieldNodes.push({ id: '__assignedTo', node: (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">משתמש</label>
+                                    <div className="relative" ref={assigneeDropdownRef}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none transition-all shadow-sm text-right"
+                                        >
+                                            {clientData.assignedTo ? (
+                                                (() => {
+                                                    const member = teamMembers.find(m => m.id === clientData.assignedTo);
+                                                    return member ? (
+                                                        <>
+                                                            <UserAvatar name={member.displayName || member.email} photoUrl={member.photoUrl} size="xs" showTooltip={false} />
+                                                            <span className="text-sm text-gray-700 dark:text-gray-200">{member.displayName || member.email}</span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-sm text-gray-400">משתמש לא נמצא</span>
+                                                    );
+                                                })()
+                                            ) : (
+                                                <>
+                                                    <div className="w-6 h-6 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                                                        <Plus className="w-3 h-3 text-gray-400" />
                                                     </div>
-                                                    {clientData.assignedTo === member.id && (
-                                                        <Check className="w-4 h-4 text-primary mr-auto" />
+                                                    <span className="text-sm text-gray-400">הקצה למשתמש...</span>
+                                                </>
+                                            )}
+                                            <ChevronDown className="w-4 h-4 text-gray-400 mr-auto" />
+                                        </button>
+                                        {showAssigneeDropdown && (
+                                            <div className="absolute z-50 mt-1 w-full bg-white dark:bg-base-800 border border-gray-200 dark:border-white/10 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAssigneeChange('')}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-right border-b border-gray-100 dark:border-white/5"
+                                                >
+                                                    <div className="w-6 h-6 rounded-full border border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                                                        <X className="w-3 h-3 text-gray-400" />
+                                                    </div>
+                                                    <span className="text-sm text-gray-500">ללא הקצאה</span>
+                                                </button>
+                                                {teamMembers.map(member => (
+                                                    <button
+                                                        key={member.id}
+                                                        type="button"
+                                                        onClick={() => handleAssigneeChange(member.id)}
+                                                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors text-right ${clientData.assignedTo === member.id ? 'bg-primary/5 dark:bg-primary/10' : ''
+                                                            }`}
+                                                    >
+                                                        <UserAvatar name={member.displayName || member.email} photoUrl={member.photoUrl} size="xs" showTooltip={false} />
+                                                        <div className="flex flex-col">
+                                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{member.displayName || member.email?.split('@')[0]}</span>
+                                                            <span className="text-[11px] text-gray-400">{member.email}</span>
+                                                        </div>
+                                                        {clientData.assignedTo === member.id && (
+                                                            <Check className="w-4 h-4 text-primary mr-auto" />
+                                                        )}
+                                                    </button>
+                                                ))}
+                                                {teamMembers.length === 0 && (
+                                                    <div className="px-4 py-6 text-center text-sm text-gray-400">
+                                                        אין חברי צוות. הוסף חברי צוות בהגדרות.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) });
+
+                            if (showLeadSources) fieldNodes.push({ id: '__sourceId', node: (
+                                <div>
+                                    <label className="block text-sm font-medium">מקור הגעה</label>
+                                    <select
+                                        value={clientData.sourceId || ''}
+                                        onChange={e => setClientData(p => ({ ...p, sourceId: e.target.value }))}
+                                        className="w-full mt-1 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none transition-all shadow-sm"
+                                    >
+                                        <option value="">בחר מקור הגעה...</option>
+                                        {leadSources.map(source => (
+                                            <option key={source.id} value={source.id}>{source.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ) });
+
+                            visibleCustomFields.filter(f => !isSystemFieldId(f.id)).forEach(f => {
+                                const fieldValue = clientData.customFields[f.id] || '';
+                                const isCopyable = fieldValue && [CustomFieldType.TEXT, CustomFieldType.EMAIL, CustomFieldType.PHONE, CustomFieldType.URL, CustomFieldType.NUMBER].includes(f.type);
+                                const isUrl = f.type === CustomFieldType.URL;
+                                fieldNodes.push({ id: f.id, node: (
+                                    <div className="group/field">
+                                        <label className="flex items-center gap-1.5 text-sm font-medium">
+                                            {f.name}
+                                            {isCopyable && (
+                                                <button type="button" onClick={() => copyToClipboard(fieldValue, f.id)} className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="העתק">
+                                                    {copiedField === f.id ? (
+                                                        <Check className="w-3.5 h-3.5 text-green-400" />
+                                                    ) : (
+                                                        <Copy className="w-3.5 h-3.5 text-gray-400" />
                                                     )}
                                                 </button>
-                                            ))}
-                                            {teamMembers.length === 0 && (
-                                                <div className="px-4 py-6 text-center text-sm text-gray-400">
-                                                    אין חברי צוות. הוסף חברי צוות בהגדרות.
-                                                </div>
                                             )}
-                                        </div>
-                                    )}
+                                            {isUrl && fieldValue && (
+                                                <a href={fieldValue.startsWith('http') ? fieldValue : `https://${fieldValue}`} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="פתח קישור">
+                                                    <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                                                </a>
+                                            )}
+                                        </label>
+                                        <input
+                                            type={f.type === CustomFieldType.DATE ? 'date' : f.type === CustomFieldType.NUMBER ? 'number' : 'text'}
+                                            value={fieldValue}
+                                            onChange={e => setClientData(p => ({ ...p, customFields: { ...p.customFields, [f.id]: e.target.value } }))}
+                                            className="w-full mt-1 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all shadow-sm"
+                                        />
+                                    </div>
+                                ) });
+                            });
+
+                            if (showCreatedAt && clientToEdit) fieldNodes.push({ id: '__createdAt', node: (
+                                <div className="group/field">
+                                    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-500">
+                                        תאריך יצירה
+                                        {clientToEdit.createdAt && (
+                                            <button type="button" onClick={() => copyToClipboard(new Date(clientToEdit.createdAt).toLocaleString('he-IL'), 'createdAt')} className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="העתק">
+                                                {copiedField === 'createdAt' ? (
+                                                    <Check className="w-3.5 h-3.5 text-green-400" />
+                                                ) : (
+                                                    <Copy className="w-3.5 h-3.5 text-gray-400" />
+                                                )}
+                                            </button>
+                                        )}
+                                    </label>
+                                    <div className="mt-1 px-4 py-2.5 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 rounded-xl border border-transparent">
+                                        {clientToEdit.createdAt ? new Date(clientToEdit.createdAt).toLocaleString('he-IL') : '-'}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                        {showLeadSources && (
-                            <div>
-                                <label className="block text-sm font-medium">מקור הגעה</label>
-                                <select
-                                    value={clientData.sourceId || ''}
-                                    onChange={e => setClientData(p => ({ ...p, sourceId: e.target.value }))}
-                                    className="w-full mt-1 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none transition-all shadow-sm"
-                                >
-                                    <option value="">בחר מקור הגעה...</option>
-                                    {leadSources.map(source => (
-                                        <option key={source.id} value={source.id}>{source.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                        {visibleCustomFields.filter(f => f.id !== '__createdAt' && f.id !== '__notes').map(f => {
-                            const fieldValue = clientData.customFields[f.id] || '';
-                            const isCopyable = fieldValue && [CustomFieldType.TEXT, CustomFieldType.EMAIL, CustomFieldType.PHONE, CustomFieldType.URL, CustomFieldType.NUMBER].includes(f.type);
-                            const isUrl = f.type === CustomFieldType.URL;
-                            return (
-                            <div key={f.id} className="group/field">
-                                <label className="flex items-center gap-1.5 text-sm font-medium">
-                                    {f.name}
-                                    {isCopyable && (
-                                        <button type="button" onClick={() => copyToClipboard(fieldValue, f.id)} className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="העתק">
-                                            {copiedField === f.id ? (
-                                                <Check className="w-3.5 h-3.5 text-green-400" />
-                                            ) : (
-                                                <Copy className="w-3.5 h-3.5 text-gray-400" />
-                                            )}
-                                        </button>
-                                    )}
-                                    {isUrl && fieldValue && (
-                                        <a href={fieldValue.startsWith('http') ? fieldValue : `https://${fieldValue}`} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="פתח קישור">
-                                            <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
-                                        </a>
-                                    )}
-                                </label>
-                                <input
-                                    type={f.type === CustomFieldType.DATE ? 'date' : f.type === CustomFieldType.NUMBER ? 'number' : 'text'}
-                                    value={fieldValue}
-                                    onChange={e => setClientData(p => ({ ...p, customFields: { ...p.customFields, [f.id]: e.target.value } }))}
-                                    className="w-full mt-1 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all shadow-sm"
-                                />
-                            </div>
-                            );
-                        })}
-                        {showCreatedAt && clientToEdit && (
-                            <div className="group/field">
-                                <label className="flex items-center gap-1.5 text-sm font-medium text-gray-500">
-                                    תאריך יצירה
-                                    {clientToEdit.createdAt && (
-                                        <button type="button" onClick={() => copyToClipboard(new Date(clientToEdit.createdAt).toLocaleString('he-IL'), 'createdAt')} className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="העתק">
-                                            {copiedField === 'createdAt' ? (
-                                                <Check className="w-3.5 h-3.5 text-green-400" />
-                                            ) : (
-                                                <Copy className="w-3.5 h-3.5 text-gray-400" />
-                                            )}
-                                        </button>
-                                    )}
-                                </label>
-                                <div className="mt-1 px-4 py-2.5 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 rounded-xl border border-transparent">
-                                    {clientToEdit.createdAt ? new Date(clientToEdit.createdAt).toLocaleString('he-IL') : '-'}
-                                </div>
-                            </div>
-                        )}
+                            ) });
+
+                            return fieldNodes
+                                .sort((a, b) => orderOf(a.id) - orderOf(b.id))
+                                .map(fn => <React.Fragment key={fn.id}>{fn.node}</React.Fragment>);
+                        })()}
                         </div>
                         {showNotes && (
                         <div>

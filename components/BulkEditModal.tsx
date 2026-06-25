@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { useAppContext } from '../context/AppContext';
-import { Client, CustomFieldType } from '../types';
+import { Client, CustomFieldType, isSystemFieldId } from '../types';
 import { Check, Info } from 'lucide-react';
 
 interface BulkEditModalProps {
@@ -47,7 +47,7 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({ isOpen, onClose, s
         { id: 'assignedTo', label: 'משתמש מוקצה', type: 'assignedTo' },
         { id: 'source', label: 'מקור הגעה', type: 'source' },
         ...customFields
-            .filter(f => !f.isSystem)
+            .filter(f => !isSystemFieldId(f.id))
             .map(f => ({
                 id: `custom_${f.id}`,
                 label: f.name,

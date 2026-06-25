@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Client, Task, CustomFieldType, StatusDefinition } from '../types';
+import { Client, Task, CustomFieldType, StatusDefinition, isSystemFieldId } from '../types';
 import { useAppContext } from '../context/AppContext';
 import LinkifiedContent from './LinkifiedContent';
 import { UserAvatar } from './UserAvatar';
@@ -168,7 +168,7 @@ const ClientCard: React.FC<{ client: Client, onCardClick: (client: Client) => vo
                             />
                         </div>
                     )}
-                    {gridFields.filter(f => f.id !== '__createdAt' && f.id !== '__notes').map(field => {
+                    {gridFields.filter(f => !isSystemFieldId(f.id)).map(field => {
                         const value = client.customFields[field.id];
                         return (
                             <div key={field.id} className="text-[0.85rem] text-gray-500 dark:text-gray-400 mb-0.5 flex items-center min-w-0 overflow-hidden">

@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
-import { Client, CustomFieldType, CustomFieldDefinition } from '../types';
+import { Client, CustomFieldType, CustomFieldDefinition, isSystemFieldId } from '../types';
 import { useAppContext } from '../context/AppContext';
 import LinkifiedContent from './LinkifiedContent';
 import { UserAvatar } from './UserAvatar';
@@ -223,7 +223,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({ clients, onRowClick })
                                 <th className="px-4 py-3 font-bold text-right">{entityLabels.nameOf}</th>
                                 {showStatuses && <th className="px-4 py-3 font-bold text-center">סטטוס</th>}
                                 {showLabels && <th className="px-4 py-3 font-bold text-center">תגיות</th>}
-                                {listFields.filter(f => f.id !== '__createdAt' && f.id !== '__notes').map(field => (
+                                {listFields.filter(f => !isSystemFieldId(f.id)).map(field => (
                                     <th key={field.id} className="px-4 py-3 font-bold text-center">{field.name}</th>
                                 ))}
                                 {showCreatedAt && <th className="px-4 py-3 font-bold text-center">תאריך יצירה</th>}
@@ -338,7 +338,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({ clients, onRowClick })
                                                     </div>
                                                 </td>
                                             )}
-                                            {listFields.filter(f => f.id !== '__createdAt' && f.id !== '__notes').map(field => (
+                                            {listFields.filter(f => !isSystemFieldId(f.id)).map(field => (
                                                 <td key={field.id} className="px-4 py-3 text-gray-600 dark:text-gray-300 text-center text-sm">
                                                     <RenderFieldValue field={field} value={client.customFields[field.id]} onLinkClick={handleLinkClick} />
                                                 </td>
@@ -547,7 +547,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({ clients, onRowClick })
                                     </div>
                                 )}
                                 <div className="space-y-1 text-sm">
-                                    {listFields.filter(f => f.id !== '__createdAt' && f.id !== '__notes').map(field => (
+                                    {listFields.filter(f => !isSystemFieldId(f.id)).map(field => (
                                         <div key={field.id} className="flex justify-between items-center py-0.5 border-b border-gray-50 dark:border-white/5 last:border-0">
                                             <span className="font-medium text-gray-500 dark:text-gray-400">{field.name}:</span>
                                             <span className="text-left text-gray-700 dark:text-gray-200">

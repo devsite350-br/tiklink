@@ -198,10 +198,35 @@ export const DEFAULT_VISIBILITY_SETTINGS: VisibilitySettings = {
   email: { enabled: false, showInGrid: false, showInList: false, showInCard: true },
 };
 
-export const SYSTEM_FIELD_DEFINITIONS = [
-  { id: '__createdAt', name: 'תאריך יצירה', type: CustomFieldType.DATE, isSystem: true },
-  { id: '__notes', name: 'פרטים נוספים', type: CustomFieldType.TEXT, isSystem: true },
+// System fields are the built-in fields shown on the client card. They appear in
+// the field-management screen (tagged "מערכת") so their display order on the card
+// can be changed. `reorderOnly` fields can only be dragged to reorder — their
+// visibility is controlled elsewhere (status/labels/users/lead-source module
+// settings), so they expose no show/hide toggles or delete in the manager.
+// `defaultOrder` defines where the field sits before the user has reordered
+// anything; negative values keep the bespoke fields ahead of custom fields
+// (which start at 0), and createdAt/notes stay last.
+export interface SystemFieldDefinition {
+  id: string;
+  name: string;
+  type: CustomFieldType;
+  isSystem: true;
+  reorderOnly?: boolean;
+  defaultOrder: number;
+}
+
+export const SYSTEM_FIELD_DEFINITIONS: SystemFieldDefinition[] = [
+  { id: '__name', name: 'שם', type: CustomFieldType.TEXT, isSystem: true, reorderOnly: true, defaultOrder: -60 },
+  { id: '__status', name: 'סטטוס', type: CustomFieldType.TEXT, isSystem: true, reorderOnly: true, defaultOrder: -50 },
+  { id: '__labels', name: 'תגיות', type: CustomFieldType.TEXT, isSystem: true, reorderOnly: true, defaultOrder: -40 },
+  { id: '__assignedTo', name: 'משתמש', type: CustomFieldType.TEXT, isSystem: true, reorderOnly: true, defaultOrder: -30 },
+  { id: '__sourceId', name: 'מקור הגעה', type: CustomFieldType.TEXT, isSystem: true, reorderOnly: true, defaultOrder: -20 },
+  { id: '__createdAt', name: 'תאריך יצירה', type: CustomFieldType.DATE, isSystem: true, defaultOrder: 9998 },
+  { id: '__notes', name: 'פרטים נוספים', type: CustomFieldType.TEXT, isSystem: true, defaultOrder: 9999 },
 ];
+
+export const isSystemFieldId = (id: string): boolean =>
+  SYSTEM_FIELD_DEFINITIONS.some(sf => sf.id === id);
 
 export interface Client {
   id: string;
