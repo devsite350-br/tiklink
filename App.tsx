@@ -713,22 +713,33 @@ const AppContent: React.FC<{ user: User; onUserRefresh: () => void }> = ({ user,
     }, [clients, isLoading, updateClient]);
 
     useEffect(() => {
-        if (!isLoading && statuses.length > 0) {
-            const unassociated = clients.find(c => c.id === UNASSOCIATED_CLIENT_ID);
-            if (!unassociated && !unassociatedCreated.current) {
-                unassociatedCreated.current = true;
-                updateClient({
-                    id: UNASSOCIATED_CLIENT_ID,
+        if (isLoading || statuses.length === 0) return;
+        const unassociated = clients.find(c => c.id === UNASSOCIATED_CLIENT_ID);
+        if (unassociated || unassociatedCreated.current) return;
+        unassociatedCreated.current = true;
+        // Verify against the server before creating. During the initial load the local
+        // `clients` snapshot can momentarily be empty/partial; writing here with a blind
+        // setDoc(merge) would replace the whole `tasks` array and WIPE existing tasks.
+        // A getDoc guard ensures we only ever create the doc when it truly doesn't exist.
+        (async () => {
+            try {
+                const ref = doc(db, 'users', effectiveUserId, 'clients', UNASSOCIATED_CLIENT_ID);
+                const snap = await getDoc(ref);
+                if (snap.exists()) return; // already exists on the server — never overwrite
+                await setDoc(ref, {
                     name: 'משימות כלליות',
                     status: statuses[0].name,
                     tasks: [],
                     comments: [],
                     customFields: {},
-                    labelIds: []
+                    labelIds: [],
                 });
+            } catch (err) {
+                console.error('Failed to ensure unassociated client', err);
+                unassociatedCreated.current = false; // allow a retry on a later render
             }
-        }
-    }, [clients, isLoading, statuses, updateClient]);
+        })();
+    }, [clients, isLoading, statuses, effectiveUserId]);
 
     const filteredClients = useMemo(() => {
         let result = (clients || []).filter(c => c.id !== UNASSOCIATED_CLIENT_ID);
