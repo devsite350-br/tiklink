@@ -228,6 +228,19 @@ export const SYSTEM_FIELD_DEFINITIONS: SystemFieldDefinition[] = [
 export const isSystemFieldId = (id: string): boolean =>
   SYSTEM_FIELD_DEFINITIONS.some(sf => sf.id === id);
 
+// Resolves the label to show for a field. System fields fall back to their
+// canonical Hebrew name, but a user-set name (persisted on the customFields
+// doc via the field-management screen) overrides it.
+export const getFieldDisplayName = (
+  customFields: { id: string; name?: string }[],
+  id: string,
+  fallback?: string,
+): string => {
+  const stored = customFields.find(f => f.id === id);
+  if (stored?.name && stored.name.trim()) return stored.name;
+  return fallback ?? SYSTEM_FIELD_DEFINITIONS.find(sf => sf.id === id)?.name ?? '';
+};
+
 export interface Client {
   id: string;
   name: string;

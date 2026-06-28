@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Modal } from './Modal';
 import { useAppContext } from '../context/AppContext';
-import { Client, CustomFieldType, Task, ActivityEvent, SYSTEM_FIELD_DEFINITIONS, isSystemFieldId } from '../types';
+import { Client, CustomFieldType, Task, ActivityEvent, SYSTEM_FIELD_DEFINITIONS, isSystemFieldId, getFieldDisplayName } from '../types';
 import { BulkTaskModal } from './BulkTaskModal';
 import { TaskDetailModal } from './TaskDetailModal';
 import { StatusSelector } from './StatusSelector';
@@ -703,7 +703,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
                             fieldNodes.push({ id: '__name', node: (
                                 <div className="group/field">
                                     <label className="flex items-center gap-1.5 text-sm font-medium">
-                                        {entityLabels.nameOf}
+                                        {getFieldDisplayName(customFields, '__name', entityLabels.nameOf)}
                                         {clientData.name && (
                                             <button type="button" onClick={() => copyToClipboard(clientData.name, 'name')} className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="העתק">
                                                 {copiedField === 'name' ? (
@@ -720,14 +720,14 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
 
                             if (showStatuses) fieldNodes.push({ id: '__status', node: (
                                 <div>
-                                    <label className="block text-sm font-medium">סטטוס</label>
+                                    <label className="block text-sm font-medium">{getFieldDisplayName(customFields, '__status')}</label>
                                     <StatusSelector value={clientData.status} onChange={handleStatusChange} />
                                 </div>
                             ) });
 
                             if (showLabels) fieldNodes.push({ id: '__labels', node: (
                                 <div>
-                                    <label className="block text-sm font-medium">תגיות</label>
+                                    <label className="block text-sm font-medium">{getFieldDisplayName(customFields, '__labels')}</label>
                                     <div className="mt-1">
                                         <LabelSelector selectedLabelIds={clientData.labelIds || []} onChange={val => setClientData(p => ({ ...p, labelIds: val }))} module="client" />
                                     </div>
@@ -736,7 +736,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
 
                             if (showUsers) fieldNodes.push({ id: '__assignedTo', node: (
                                 <div>
-                                    <label className="block text-sm font-medium mb-1">משתמש</label>
+                                    <label className="block text-sm font-medium mb-1">{getFieldDisplayName(customFields, '__assignedTo')}</label>
                                     <div className="relative" ref={assigneeDropdownRef}>
                                         <button
                                             type="button"
@@ -808,7 +808,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
 
                             if (showLeadSources) fieldNodes.push({ id: '__sourceId', node: (
                                 <div>
-                                    <label className="block text-sm font-medium">מקור הגעה</label>
+                                    <label className="block text-sm font-medium">{getFieldDisplayName(customFields, '__sourceId')}</label>
                                     <select
                                         value={clientData.sourceId || ''}
                                         onChange={e => setClientData(p => ({ ...p, sourceId: e.target.value }))}
@@ -858,7 +858,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
                             if (showCreatedAt && clientToEdit) fieldNodes.push({ id: '__createdAt', node: (
                                 <div className="group/field">
                                     <label className="flex items-center gap-1.5 text-sm font-medium text-gray-500">
-                                        תאריך יצירה
+                                        {getFieldDisplayName(customFields, '__createdAt')}
                                         {clientToEdit.createdAt && (
                                             <button type="button" onClick={() => copyToClipboard(new Date(clientToEdit.createdAt).toLocaleString('he-IL'), 'createdAt')} className="opacity-0 group-hover/field:opacity-100 transition-opacity p-0.5 rounded hover:bg-white/10" title="העתק">
                                                 {copiedField === 'createdAt' ? (
@@ -882,7 +882,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
                         </div>
                         {showNotes && (
                         <div>
-                            <label className="block text-sm font-medium">פרטים נוספים</label>
+                            <label className="block text-sm font-medium">{getFieldDisplayName(customFields, '__notes')}</label>
                             <textarea value={clientData.notes} onChange={e => setClientData(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full mt-1 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 focus:border-primary/50 outline-none transition-all shadow-sm" />
                         </div>
                         )}
