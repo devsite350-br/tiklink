@@ -5,7 +5,9 @@ import { collection, getDocs } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { LogOut, RefreshCw, Search, ArrowLeft } from 'lucide-react';
 
-const SUPER_ADMIN_EMAIL = (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '').toLowerCase().trim();
+// Template super admin: hardcoded fallback so devsite350 stays super admin in
+// every deployment even if VITE_SUPER_ADMIN_EMAIL is missing. Must match firestore.rules.
+const SUPER_ADMIN_EMAIL = (import.meta.env.VITE_SUPER_ADMIN_EMAIL || 'devsite350@gmail.com').toLowerCase().trim();
 
 interface UserRecord {
   uid: string;
