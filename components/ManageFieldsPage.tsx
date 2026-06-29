@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { GripVertical, Pencil, Trash2, Plus, Image, FileText } from 'lucide-react';
+import { GripVertical, Pencil, Trash2, Plus, Image, FileText, SlidersHorizontal, Flag, Tags, Megaphone, Zap, Users, ListTodo, Sparkles, MessageCircle, Mail, Settings } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { CustomFieldDefinition, CustomFieldType, CUSTOM_FIELD_TYPE_LIST, StatusDefinition, LabelDefinition, ModuleVisibility, VisibilitySettings, SYSTEM_FIELD_DEFINITIONS, isSystemFieldId, TaskKanbanColumn } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -985,8 +985,32 @@ const TaskKanbanColumnsManager: React.FC = () => {
     );
 };
 
+type SettingsTabId = 'fields' | 'statuses' | 'labels' | 'leadSources' | 'automations' | 'team' | 'ai' | 'meetings' | 'documents' | 'whatsapp' | 'email' | 'tasks' | 'system';
+
+interface SettingsTab {
+    id: SettingsTabId;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    moduleKey?: string;
+}
+
+const TABS: SettingsTab[] = [
+    { id: 'fields', label: 'ניהול שדות', icon: SlidersHorizontal },
+    { id: 'statuses', label: 'ניהול סטטוסים', icon: Flag },
+    { id: 'labels', label: 'ניהול תגיות', icon: Tags },
+    { id: 'leadSources', label: 'מקורות הגעה', icon: Megaphone, moduleKey: 'leadSources' },
+    { id: 'automations', label: 'אוטומציות', icon: Zap, moduleKey: 'automations' },
+    { id: 'team', label: 'ניהול צוות', icon: Users, moduleKey: 'team' },
+    { id: 'tasks', label: 'משימות', icon: ListTodo, moduleKey: 'tasks' },
+    { id: 'ai', label: 'הגדרות AI', icon: Sparkles, moduleKey: 'ai' },
+    { id: 'documents', label: 'מסמכים', icon: FileText, moduleKey: 'documents' },
+    { id: 'whatsapp', label: 'וואטסאפ', icon: MessageCircle, moduleKey: 'whatsapp' },
+    { id: 'email', label: 'אימייל', icon: Mail, moduleKey: 'email' },
+    { id: 'system', label: 'מערכת', icon: Settings },
+];
+
 export const ManageFieldsPage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'fields' | 'statuses' | 'labels' | 'leadSources' | 'automations' | 'team' | 'ai' | 'meetings' | 'documents' | 'whatsapp' | 'email' | 'tasks' | 'system'>('fields');
+    const [activeTab, setActiveTab] = useState<SettingsTabId>('fields');
     const { blockedModules } = useAppContext();
     const isBlocked = (key: string) => blockedModules.includes(key);
 
@@ -995,111 +1019,44 @@ export const ManageFieldsPage: React.FC = () => {
         if (isBlocked(activeTab)) setActiveTab('fields');
     }, [blockedModules, activeTab]);
 
+    const visibleTabs = TABS.filter(t => !t.moduleKey || !isBlocked(t.moduleKey));
+    const activeTabLabel = TABS.find(t => t.id === activeTab)?.label ?? '';
+
     return (
         <div className="p-2 sm:p-6 h-full flex flex-col overflow-x-hidden">
-            <h1 className="text-lg font-bold mb-2 pt-2 sm:pt-0 text-gray-800 dark:text-gray-100 px-2 sm:px-0">הגדרות מערכת</h1>
-            <div className="border-b border-gray-200 dark:border-gray-700 mb-4 overflow-x-auto hide-scrollbar -mx-2 px-4 sm:mx-0 sm:px-0">
-                <nav className="flex -mb-px space-x-4 space-x-reverse min-w-max" aria-label="Tabs">
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('fields')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'fields' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        ניהול שדות
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('statuses')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'statuses' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        ניהול סטטוסים
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('labels')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'labels' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        ניהול תגיות
-                    </button>
-                    {!isBlocked('leadSources') && (
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('leadSources')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'leadSources' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        מקורות הגעה
-                    </button>
-                    )}
-                    {!isBlocked('automations') && (
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('automations')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'automations' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        אוטומציות
-                    </button>
-                    )}
-                    {!isBlocked('team') && (
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('team')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'team' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        ניהול צוות
-                    </button>
-                    )}
-                    {!isBlocked('tasks') && (
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('tasks')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'tasks' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        משימות
-                    </button>
-                    )}
-                    {!isBlocked('ai') && (
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('ai')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'ai' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        הגדרות AI
-                    </button>
-                    )}
-                    {!isBlocked('documents') && (
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('documents')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'documents' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        מסמכים
-                    </button>
-                    )}
-                    {!isBlocked('whatsapp') && (
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('whatsapp')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'whatsapp' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        וואטסאפ
-                    </button>
-                    )}
-                    {!isBlocked('email') && (
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('email')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'email' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        אימייל
-                    </button>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab('system')}
-                        className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors ${activeTab === 'system' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
-                    >
-                        מערכת
-                    </button>
+            <div className="flex items-center gap-3 mb-1 pt-2 sm:pt-0 px-2 sm:px-0">
+                <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/15 shrink-0">
+                    <SlidersHorizontal className="w-5 h-5" />
+                </div>
+                <div>
+                    <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100 leading-tight">הגדרות מערכת</h1>
+                    <p className="text-xs text-gray-400">{activeTabLabel}</p>
+                </div>
+            </div>
+            <div className="mb-4 overflow-x-auto hide-scrollbar -mx-2 px-2 sm:mx-0 sm:px-0">
+                <nav
+                    className="inline-flex min-w-max items-center gap-1 p-1.5 rounded-2xl bg-gray-100/80 dark:bg-white/[0.04] backdrop-blur-sm border border-gray-200/70 dark:border-white/10 shadow-sm"
+                    aria-label="Tabs"
+                >
+                    {visibleTabs.map(tab => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`group flex items-center gap-2 whitespace-nowrap rounded-xl py-2 px-3.5 text-sm font-medium transition-all duration-200 ${
+                                    isActive
+                                        ? 'bg-gradient-to-br from-primary to-primary/85 text-white shadow-md shadow-primary/25'
+                                        : 'text-gray-500 dark:text-gray-400 hover:bg-white/70 dark:hover:bg-white/[0.06] hover:text-gray-800 dark:hover:text-gray-100'
+                                }`}
+                            >
+                                <Icon className={`w-4 h-4 transition-transform duration-200 ${isActive ? '' : 'group-hover:scale-110'}`} />
+                                {tab.label}
+                            </button>
+                        );
+                    })}
                 </nav>
             </div>
             <div className="flex-1 overflow-y-auto overflow-x-hidden pl-4">
