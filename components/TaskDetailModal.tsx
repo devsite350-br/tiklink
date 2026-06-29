@@ -1,12 +1,20 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from './Modal';
-import { Task, Subtask, CrmDocument, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
+import { Task, Subtask, CrmDocument, CustomFieldType, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { uploadFile } from '../utils/apiClient';
-import { X, ChevronDown, Link, Paperclip, Download } from 'lucide-react';
+import { X, ChevronDown, Link, Paperclip, Download, Mail } from 'lucide-react';
 
 const generateSubtaskId = () => `sub_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+
+const formatWhatsAppNumber = (phoneNumber: string) => {
+    const cleanNumber = phoneNumber.replace(/\D/g, '');
+    if (cleanNumber.startsWith('0')) {
+        return '972' + cleanNumber.substring(1);
+    }
+    return cleanNumber;
+};
 const generateShareToken = () => `${Date.now().toString(36)}${Math.random().toString(36).substr(2, 10)}${Math.random().toString(36).substr(2, 10)}`;
 
 interface TaskDetailModalProps {
@@ -21,7 +29,7 @@ interface TaskDetailModalProps {
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClose, task, clients, clientId, onClientChange, onSave, userId }) => {
-    const { entityLabels, addDocument, documents } = useAppContext();
+    const { entityLabels, addDocument, documents, clients: allClients, customFields } = useAppContext();
     const [text, setText] = useState(task.text);
     const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
     const [dueDate, setDueDate] = useState<string>(task.dueDate || '');
@@ -251,6 +259,30 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
         }
     };
 
+    // Associated client + its phone/email, for sharing the link directly with them.
+    const sharedClient = clientId ? allClients.find(c => c.id === clientId) : undefined;
+    const phoneFieldId = customFields.find(f => f.type === CustomFieldType.PHONE)?.id;
+    const emailFieldId = customFields.find(f => f.type === CustomFieldType.EMAIL)?.id;
+    const clientPhone = sharedClient && phoneFieldId ? sharedClient.customFields[phoneFieldId] : null;
+    const clientEmail = sharedClient && emailFieldId ? sharedClient.customFields[emailFieldId] : null;
+
+    const buildShareMessage = () => {
+        const url = buildShareUrl();
+        const greeting = sharedClient?.name ? `שלום ${sharedClient.name},` : 'שלום,';
+        return `${greeting}\nמצורף קישור לצ'קליסט "${text}":\n${url}`;
+    };
+
+    const buildWhatsAppUrl = () => {
+        if (!clientPhone) return '';
+        return `https://wa.me/${formatWhatsAppNumber(clientPhone)}?text=${encodeURIComponent(buildShareMessage())}`;
+    };
+
+    const buildMailtoUrl = () => {
+        if (!clientEmail) return '';
+        const subject = `צ'קליסט: ${text}`;
+        return `mailto:${clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(buildShareMessage())}`;
+    };
+
     const completedCount = subtasks.filter(s => s.isCompleted).length;
 
     const handleClose = () => { flushSave(); onClose(); };
@@ -478,6 +510,33 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                                         {shareBusy ? '...' : 'ביטול'}
                                     </button>
                                 </div>
+                                {(clientPhone || clientEmail) && (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">שתף עם {sharedClient?.name || 'הלקוח'}:</span>
+                                        {clientPhone && (
+                                            <a
+                                                href={buildWhatsAppUrl()}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                title="שתף בוואטסאפ"
+                                                className="w-8 h-8 flex items-center justify-center rounded-full bg-green-100 text-green-600 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50 transition-colors shadow-sm"
+                                            >
+                                                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.008-.57-.008-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                                                </svg>
+                                            </a>
+                                        )}
+                                        {clientEmail && (
+                                            <a
+                                                href={buildMailtoUrl()}
+                                                title="שתף במייל"
+                                                className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors shadow-sm"
+                                            >
+                                                <Mail className="h-4 w-4" />
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                     כל מי שיש לו את הקישור יוכל לראות את פריטי הצ'קליסט ולצרף קבצים לכל פריט, ללא התחברות (ללא גישה לפרטים אחרים).
                                 </p>
