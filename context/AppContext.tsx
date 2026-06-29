@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode, useCallback, useState, useEffect, useMemo } from 'react';
-import { Client, CustomFieldDefinition, Automation, AutomationTrigger, StatusDefinition, LabelDefinition, CustomFieldType, LeadSource, ImportBatch, VisibilitySettings, DEFAULT_VISIBILITY_SETTINGS, Meeting, ConnectedCalendar, CrmDocument, DocumentContent, DocumentTemplate, UserPlan, PLAN_LIMITS, WhatsAppSettings, EmailSettings, EntityLabel, EntityLabels, getEntityLabels, isSystemFieldId } from '../types';
+import { Client, CustomFieldDefinition, Automation, AutomationTrigger, StatusDefinition, LabelDefinition, CustomFieldType, LeadSource, ImportBatch, VisibilitySettings, DEFAULT_VISIBILITY_SETTINGS, Meeting, ConnectedCalendar, CrmDocument, DocumentContent, DocumentTemplate, UserPlan, PLAN_LIMITS, WhatsAppSettings, EmailSettings, EntityLabel, EntityLabels, getEntityLabels, isSystemFieldId, TaskKanbanColumn, DEFAULT_TASK_KANBAN_COLUMNS, mergeTaskKanbanColumns } from '../types';
 import { db, auth } from '../firebaseConfig';
 import { collection, onSnapshot, doc, addDoc, setDoc, deleteDoc, writeBatch, getDocs, getDoc, updateDoc, increment } from 'firebase/firestore';
 import { api } from '../utils/apiClient';
@@ -95,6 +95,8 @@ interface AppContextType {
   teamMembers: TeamMember[];
   visibilitySettings: VisibilitySettings;
   updateVisibilitySettings: (settings: VisibilitySettings) => Promise<void>;
+  taskKanbanColumns: TaskKanbanColumn[];
+  updateTaskKanbanColumns: (columns: TaskKanbanColumn[]) => Promise<void>;
   isSyncing: boolean;
   isLoading: boolean;
   dbError: string | null;
@@ -162,6 +164,7 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
   const [importHistory, setImportHistory] = useState<ImportBatch[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [visibilitySettings, setVisibilitySettings] = useState<VisibilitySettings>(DEFAULT_VISIBILITY_SETTINGS);
+  const [taskKanbanColumns, setTaskKanbanColumns] = useState<TaskKanbanColumn[]>(DEFAULT_TASK_KANBAN_COLUMNS);
   const [whatsappSettings, setWhatsappSettings] = useState<WhatsAppSettings | null>(null);
   const [emailSettings, setEmailSettings] = useState<EmailSettings | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -350,6 +353,10 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
           }, handleError),
           onSnapshot(doc(db, 'users', targetUserId, 'settings', 'email'), snap => {
             setEmailSettings(snap.exists() ? (snap.data() as EmailSettings) : null);
+          }, handleError),
+          onSnapshot(doc(db, 'users', targetUserId, 'settings', 'taskKanban'), snap => {
+            const data = snap.exists() ? (snap.data() as { columns?: Partial<TaskKanbanColumn>[] }) : null;
+            setTaskKanbanColumns(mergeTaskKanbanColumns(data?.columns));
           }, handleError),
           onSnapshot(userColl('labels', targetUserId), snap => setLabels(snap.docs.map(d => ({ id: d.id, ...d.data() } as LabelDefinition))), handleError),
           onSnapshot(userColl('leadSources', targetUserId), snap => setLeadSources(snap.docs.map(d => ({ id: d.id, ...d.data() } as LeadSource))), handleError),
@@ -733,6 +740,12 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
     await setDoc(doc(db, 'users', effectiveUserId, 'settings', 'visibility'), sanitized);
   };
 
+  const updateTaskKanbanColumns = async (columns: TaskKanbanColumn[]) => {
+    const merged = mergeTaskKanbanColumns(columns);
+    setTaskKanbanColumns(merged);
+    await setDoc(doc(db, 'users', effectiveUserId, 'settings', 'taskKanban'), { columns: merged });
+  };
+
   const updateWhatsAppSettings = async (settings: WhatsAppSettings) => {
     await setDoc(doc(db, 'users', effectiveUserId, 'settings', 'whatsapp'), settings);
   };
@@ -809,6 +822,7 @@ export const AppProvider: React.FC<{ children: ReactNode; userId: string }> = ({
       importHistory, bulkAddClients, undoImport,
       teamMembers,
       visibilitySettings: effectiveVisibilitySettings, updateVisibilitySettings,
+      taskKanbanColumns, updateTaskKanbanColumns,
       whatsappSettings, updateWhatsAppSettings,
       emailSettings, updateEmailSettings,
       meetings, addMeeting, updateMeeting, deleteMeeting,

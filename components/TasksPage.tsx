@@ -29,7 +29,8 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
 
     const [viewMode, setViewMode] = useState<'list' | 'kanban'>(() => {
         const saved = localStorage.getItem('tasksViewMode');
-        return saved === 'kanban' ? 'kanban' : 'list';
+        // Kanban is the default view; only an explicit saved 'list' preference overrides it.
+        return saved === 'list' ? 'list' : 'kanban';
     });
     const [selectedClientId, setSelectedClientId] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');

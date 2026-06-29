@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Client, Task, TaskPriority, UNASSOCIATED_CLIENT_ID } from '../types';
+import { Client, Task, TaskPriority, UNASSOCIATED_CLIENT_ID, TaskKanbanColumn } from '../types';
 import { useAppContext } from '../context/AppContext';
 import LinkifiedContent from './LinkifiedContent';
 import { Calendar, ListChecks, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -15,18 +15,7 @@ const isColorLight = (hexColor: string) => {
 
 type KanbanColumn = 'none' | 'medium' | 'high' | 'done';
 
-interface KanbanColumnDef {
-    id: KanbanColumn;
-    name: string;
-    color: string;
-}
-
-const KANBAN_COLUMNS: KanbanColumnDef[] = [
-    { id: 'medium', name: 'עדיפות רגילה', color: '#7E58DD' },
-    { id: 'high', name: 'עדיפות גבוהה', color: '#4382DF' },
-    { id: 'none', name: 'ללא עדיפות', color: '#9ca3af' },
-    { id: 'done', name: 'הושלם', color: '#22c55e' },
-];
+type KanbanColumnDef = TaskKanbanColumn;
 
 const isTaskOverdue = (task: Task) => {
     if (!task.dueDate || task.isCompleted) return false;
@@ -216,6 +205,7 @@ export const TaskKanbanBoard: React.FC<{
     onClientClick: (client: Client) => void;
     onDropToColumn: (clientId: string, taskId: string, targetColumn: KanbanColumn) => void;
 }> = ({ filteredTasks, onCardClick, onClientClick, onDropToColumn }) => {
+    const { taskKanbanColumns } = useAppContext();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
@@ -318,7 +308,7 @@ export const TaskKanbanBoard: React.FC<{
                 ref={scrollRef}
                 className="h-full flex flex-row gap-0 overflow-x-auto pb-4 hide-scrollbar snap-x snap-mandatory"
             >
-                {KANBAN_COLUMNS.map(column => (
+                {taskKanbanColumns.map(column => (
                     <KanbanStatusColumn
                         key={column.id}
                         column={column}

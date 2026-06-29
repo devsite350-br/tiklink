@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GripVertical, Pencil, Trash2, Plus, Image, FileText } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { CustomFieldDefinition, CustomFieldType, CUSTOM_FIELD_TYPE_LIST, StatusDefinition, LabelDefinition, ModuleVisibility, VisibilitySettings, SYSTEM_FIELD_DEFINITIONS, isSystemFieldId } from '../types';
+import { CustomFieldDefinition, CustomFieldType, CUSTOM_FIELD_TYPE_LIST, StatusDefinition, LabelDefinition, ModuleVisibility, VisibilitySettings, SYSTEM_FIELD_DEFINITIONS, isSystemFieldId, TaskKanbanColumn } from '../types';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -907,6 +907,84 @@ const EmailModuleToggle: React.FC = () => {
     );
 };
 
+// Manage the names and colors of the fixed task-kanban columns. The set of
+// columns and their order is fixed (they map to task priority + completion),
+// so only the display name and color are editable here.
+const TaskKanbanColumnsManager: React.FC = () => {
+    const { taskKanbanColumns, updateTaskKanbanColumns } = useAppContext();
+    const [draft, setDraft] = useState<TaskKanbanColumn[]>(taskKanbanColumns);
+    const [isSaving, setIsSaving] = useState(false);
+    const [justSaved, setJustSaved] = useState(false);
+
+    useEffect(() => {
+        setDraft(taskKanbanColumns);
+    }, [taskKanbanColumns]);
+
+    const isDirty = useMemo(
+        () => JSON.stringify(draft) !== JSON.stringify(taskKanbanColumns),
+        [draft, taskKanbanColumns]
+    );
+
+    const handleChange = (id: string, field: 'name' | 'color', value: string) => {
+        setDraft(prev => prev.map(c => (c.id === id ? { ...c, [field]: value } : c)));
+        setJustSaved(false);
+    };
+
+    const handleSave = async () => {
+        if (draft.some(c => !c.name.trim())) return;
+        setIsSaving(true);
+        try {
+            await updateTaskKanbanColumns(draft);
+            setJustSaved(true);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4 border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div>
+                <h3 className="text-lg font-medium mb-1">עמודות קנבן</h3>
+                <p className="text-sm text-gray-500">הגדר את השם והצבע של העמודות בתצוגת הקנבן של המשימות.</p>
+            </div>
+            <ul className="space-y-2">
+                {draft.map(column => (
+                    <li
+                        key={column.id}
+                        className="bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-white/5 p-3 rounded-xl shadow-sm flex items-center gap-3"
+                    >
+                        <input
+                            type="color"
+                            value={column.color}
+                            onChange={e => handleChange(column.id, 'color', e.target.value)}
+                            className="p-1 h-10 w-12 flex-shrink-0 block bg-white border border-gray-200 cursor-pointer rounded-lg dark:bg-base-950 dark:border-white/10"
+                            title="צבע העמודה"
+                        />
+                        <input
+                            type="text"
+                            value={column.name}
+                            onChange={e => handleChange(column.id, 'name', e.target.value)}
+                            placeholder="שם העמודה"
+                            className="flex-grow px-4 py-2.5 border border-gray-200 dark:border-white/10 rounded-xl bg-gray-50/50 dark:bg-base-950/50 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all shadow-sm"
+                        />
+                    </li>
+                ))}
+            </ul>
+            <div className="flex items-center gap-3">
+                <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={!isDirty || isSaving || draft.some(c => !c.name.trim())}
+                    className="px-4 py-2 rounded bg-primary text-white hover:bg-opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                    {isSaving ? 'שומר...' : 'שמור עמודות'}
+                </button>
+                {justSaved && !isDirty && <span className="text-sm text-green-600">נשמר ✓</span>}
+            </div>
+        </div>
+    );
+};
+
 export const ManageFieldsPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'fields' | 'statuses' | 'labels' | 'leadSources' | 'automations' | 'team' | 'ai' | 'meetings' | 'documents' | 'whatsapp' | 'email' | 'tasks' | 'system'>('fields');
     const { blockedModules } = useAppContext();
@@ -1031,7 +1109,7 @@ export const ManageFieldsPage: React.FC = () => {
                 {activeTab === 'leadSources' && !isBlocked('leadSources') && <div><ModuleVisibilityCheckboxes moduleKey="leadSources" label="מקורות הגעה" /><div className="-mx-2 sm:-mx-6"><LeadSourcesPage /></div></div>}
                 {activeTab === 'automations' && !isBlocked('automations') && <AutomationsPage onNavigateToTab={(tab) => setActiveTab(tab as any)} />}
                 {activeTab === 'team' && !isBlocked('team') && <div><ModuleVisibilityCheckboxes moduleKey="users" label="משתמשים" /><TeamSettings /></div>}
-                {activeTab === 'tasks' && !isBlocked('tasks') && <div className="p-0"><ModuleVisibilityCheckboxes moduleKey="tasks" label="משימות" allowToggle={true} /><p className="text-sm text-gray-500">הגדרות אלו קובעות היכן מודול המשימות יוצג במערכת.</p></div>}
+                {activeTab === 'tasks' && !isBlocked('tasks') && <div className="p-0 space-y-2"><ModuleVisibilityCheckboxes moduleKey="tasks" label="משימות" allowToggle={true} /><p className="text-sm text-gray-500">הגדרות אלו קובעות היכן מודול המשימות יוצג במערכת.</p><TaskKanbanColumnsManager /></div>}
                 {activeTab === 'ai' && !isBlocked('ai') && <div><ModuleVisibilityCheckboxes moduleKey="aiSummary" label="סיכום AI" /><AISettings /></div>}
                 {activeTab === 'documents' && !isBlocked('documents') && <DocumentsSettings />}
                 {activeTab === 'whatsapp' && !isBlocked('whatsapp') && (

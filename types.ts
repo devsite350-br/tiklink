@@ -39,6 +39,40 @@ export interface Subtask {
 
 export type TaskPriority = 'none' | 'medium' | 'high';
 
+// The task kanban board has a fixed set of columns tied to task priority +
+// completion. Their display name and color are user-configurable (Settings >
+// Tasks); the id is the semantic key and never changes.
+export type TaskKanbanColumnId = 'medium' | 'high' | 'none' | 'done';
+
+export interface TaskKanbanColumn {
+  id: TaskKanbanColumnId;
+  name: string;
+  color: string;
+}
+
+export const DEFAULT_TASK_KANBAN_COLUMNS: TaskKanbanColumn[] = [
+  { id: 'medium', name: 'עדיפות רגילה', color: '#7E58DD' },
+  { id: 'high', name: 'עדיפות גבוהה', color: '#4382DF' },
+  { id: 'none', name: 'ללא עדיפות', color: '#9ca3af' },
+  { id: 'done', name: 'הושלם', color: '#22c55e' },
+];
+
+// Merges stored overrides onto the default columns: keeps the canonical order
+// and set of columns, applying any saved name/color. Resilient to partial or
+// stale data.
+export const mergeTaskKanbanColumns = (
+  stored?: Partial<TaskKanbanColumn>[] | null
+): TaskKanbanColumn[] => {
+  return DEFAULT_TASK_KANBAN_COLUMNS.map(def => {
+    const override = stored?.find(c => c?.id === def.id);
+    return {
+      id: def.id,
+      name: override?.name?.trim() ? override.name : def.name,
+      color: override?.color || def.color,
+    };
+  });
+};
+
 export interface Task {
   id: string;
   text: string;
