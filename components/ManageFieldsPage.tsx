@@ -14,6 +14,7 @@ import { MeetingsSettings } from './MeetingsSettings';
 import { WhatsAppSettings } from './WhatsAppSettings';
 import { EmailSettings } from './EmailSettings';
 import { SystemSettings } from './SystemSettings';
+import { useConfirm } from './ConfirmDialog';
 
 export const ModuleVisibilityCheckboxes: React.FC<{
     moduleKey: keyof VisibilitySettings;
@@ -102,6 +103,7 @@ const LabelsManager = () => {
     // Module visibility for labels
     // (displayed above the labels list)
     const { labels, addLabel, updateLabel, deleteLabel, clients, entityLabels } = useAppContext();
+    const confirm = useConfirm();
     const [newLabelName, setNewLabelName] = useState('');
     const [newLabelColor, setNewLabelColor] = useState('#2f8f74');
 
@@ -169,8 +171,8 @@ const LabelsManager = () => {
                                                 <Pencil className="w-5 h-5" />
                                             </button>
                                             <button
-                                                onClick={() => {
-                                                    if (window.confirm('האם אתה בטוח שברצונך למחוק תגית זו?')) {
+                                                onClick={async () => {
+                                                    if (await confirm({ title: 'מחיקת תגית', message: <>האם אתה בטוח שברצונך למחוק את התגית <strong>"{label.name}"</strong>?</> })) {
                                                         deleteLabel(label.id);
                                                     }
                                                 }}
@@ -265,6 +267,7 @@ const SortableStatusItem: React.FC<SortableStatusItemProps> = ({ status, isEditi
 
 const StatusManager = () => {
     const { statuses, addStatus, updateStatus, deleteStatus, setStatusesOrder, clients } = useAppContext();
+    const confirm = useConfirm();
     const [currentStatuses, setCurrentStatuses] = useState(statuses);
     const [newStatusName, setNewStatusName] = useState('');
     const [newStatusColor, setNewStatusColor] = useState('#cccccc');
@@ -363,10 +366,10 @@ const StatusManager = () => {
                                         onStartEdit={handleStartEdit}
                                         onSaveEdit={handleSaveEdit}
                                         onCancelEdit={() => setEditingStatusId(null)}
-                                        onDelete={() => {
+                                        onDelete={async () => {
                                             if (statusInUseMap.has(status.name)) {
                                                 setDeleteConfirmation({ id: status.id, name: status.name });
-                                            } else {
+                                            } else if (await confirm({ title: 'מחיקת סטטוס', message: <>האם אתה בטוח שברצונך למחוק את הסטטוס <strong>"{status.name}"</strong>?</> })) {
                                                 deleteStatus(status.id);
                                             }
                                         }}
@@ -487,6 +490,7 @@ const SortableFieldItem: React.FC<SortableFieldItemProps> = ({ field, isEditing,
 
 const FieldsManager = () => {
     const { customFields, addCustomField, deleteCustomField, updateCustomField, setCustomFieldsOrder, entityLabels } = useAppContext();
+    const confirm = useConfirm();
     const [currentFields, setCurrentFields] = useState(customFields);
     const [newFieldName, setNewFieldName] = useState('');
     const [newFieldType, setNewFieldType] = useState<CustomFieldType>(CustomFieldType.TEXT);
@@ -575,7 +579,11 @@ const FieldsManager = () => {
                                         onStartEdit={handleStartEdit}
                                         onSaveEdit={() => handleSaveEdit(field)}
                                         onCancelEdit={() => setEditingFieldId(null)}
-                                        onDelete={() => deleteCustomField(field.id)}
+                                        onDelete={async () => {
+                                            if (await confirm({ title: 'מחיקת שדה', message: <>האם אתה בטוח שברצונך למחוק את השדה <strong>"{field.name}"</strong>?</> })) {
+                                                deleteCustomField(field.id);
+                                            }
+                                        }}
                                         editedData={editedFieldData}
                                         setEditedData={setEditedFieldData}
                                     />
@@ -634,6 +642,7 @@ const FieldsManager = () => {
 
 const DocumentsSettings = () => {
     const { documentTemplates, addDocumentTemplate, updateDocumentTemplate, deleteDocumentTemplate, customFields, entityLabels } = useAppContext();
+    const confirm = useConfirm();
     const [newName, setNewName] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
@@ -839,7 +848,7 @@ const DocumentsSettings = () => {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button onClick={() => handleStartEdit(t)} className="text-primary hover:opacity-80" title="ערוך תבנית"><Pencil className="w-5 h-5" /></button>
-                                            <button onClick={() => { if(window.confirm('למחוק תבנית זו?')) deleteDocumentTemplate(t.id); }} className="text-red-500 hover:text-red-700" title="מחק תבנית"><Trash2 className="w-5 h-5" /></button>
+                                            <button onClick={async () => { if(await confirm({ title: 'מחיקת תבנית', message: <>האם אתה בטוח שברצונך למחוק את התבנית <strong>"{t.name}"</strong>?</> })) deleteDocumentTemplate(t.id); }} className="text-red-500 hover:text-red-700" title="מחק תבנית"><Trash2 className="w-5 h-5" /></button>
                                         </div>
                                     </div>
                                 )}

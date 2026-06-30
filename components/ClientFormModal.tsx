@@ -13,6 +13,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { UserAvatar } from './UserAvatar';
 import { ClientMeetingsTab } from './ClientMeetingsTab';
 import { ClientWhatsAppTab } from './ClientWhatsAppTab';
+import { useConfirm } from './ConfirmDialog';
 import { DocumentsList } from './DocumentsList';
 import LinkifiedContent from './LinkifiedContent';
 
@@ -365,6 +366,7 @@ const TaskManager: React.FC<{
 
 export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClose, clientToEdit }) => {
     const { addClient, deleteClient, updateClient, triggerAutomations, customFields, statuses, userId, effectiveUserId, teamMembers, leadSources, visibilitySettings, entityLabels } = useAppContext();
+    const confirm = useConfirm();
     const [activeTab, setActiveTab] = useState<'details' | 'tasks' | 'ai' | 'meetings' | 'documents' | 'whatsapp'>('details');
     const [aiEnabled, setAiEnabled] = useState(false);
     const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
@@ -436,7 +438,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
 
     const handleDelete = async () => {
         if (!clientToEdit) return;
-        if (window.confirm(`האם אתה בטוח שברצונך למחוק את ${entityLabels.theSingular}?`)) {
+        if (await confirm({ message: `האם אתה בטוח שברצונך למחוק את ${entityLabels.theSingular}?` })) {
             await deleteClient(clientToEdit.id);
             onClose();
         }

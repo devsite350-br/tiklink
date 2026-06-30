@@ -5,6 +5,7 @@ import { useAppContext } from '../context/AppContext';
 import LinkifiedContent from './LinkifiedContent';
 import { UserAvatar } from './UserAvatar';
 import { BulkEditModal } from './BulkEditModal';
+import { useConfirm } from './ConfirmDialog';
 import { Pencil, Trash2, X, Check, Minus, Phone, Mail, ExternalLink, Users, Search, Sparkles } from 'lucide-react';
 
 interface ClientTableProps {
@@ -87,6 +88,7 @@ const RenderFieldValue: React.FC<{ field: CustomFieldDefinition, value: string, 
 
 export const ClientTable: React.FC<ClientTableProps> = ({ clients, onRowClick }) => {
     const { deleteClient, customFields, statusMap, labelMap, teamMembers, leadSources, visibilitySettings, meetings, entityLabels } = useAppContext();
+    const confirm = useConfirm();
 
     // Selection state
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -107,9 +109,9 @@ export const ClientTable: React.FC<ClientTableProps> = ({ clients, onRowClick })
         e.stopPropagation();
     };
 
-    const handleDeleteClient = (e: React.MouseEvent, clientId: string) => {
+    const handleDeleteClient = async (e: React.MouseEvent, clientId: string) => {
         e.stopPropagation();
-        if (window.confirm(`האם אתה בטוח שברצונך למחוק את ${entityLabels.theSingular}?`)) {
+        if (await confirm({ message: `האם אתה בטוח שברצונך למחוק את ${entityLabels.theSingular}?` })) {
             deleteClient(clientId);
         }
     };
@@ -142,8 +144,8 @@ export const ClientTable: React.FC<ClientTableProps> = ({ clients, onRowClick })
 
     const selectedClients = clients.filter(c => selectedIds.has(c.id));
 
-    const handleBulkDelete = () => {
-        if (window.confirm(`האם אתה בטוח שברצונך למחוק ${selectedClients.length} ${entityLabels.plural}?`)) {
+    const handleBulkDelete = async () => {
+        if (await confirm({ message: `האם אתה בטוח שברצונך למחוק ${selectedClients.length} ${entityLabels.plural}?` })) {
             selectedClients.forEach(c => deleteClient(c.id));
             setSelectedIds(new Set());
         }

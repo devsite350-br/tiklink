@@ -6,6 +6,7 @@ import { db } from '../firebaseConfig';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { Modal } from './Modal';
 import { Link, MessageSquare, Mail, Zap, Target, ChevronDown, Plus, X } from 'lucide-react';
+import { useConfirm } from './ConfirmDialog';
 
 type TriggerType = 'status_change' | 'client_created';
 type ActionType = 'webhook' | 'whatsapp' | 'email';
@@ -506,6 +507,7 @@ const describeAutomation = (a: Automation, entityLabels: { newEntity: string }):
 
 export const AutomationsPage: React.FC<{ onNavigateToTab?: (tab: string) => void }> = ({ onNavigateToTab }) => {
     const { automations, addAutomation, updateAutomation, deleteAutomation, effectiveUserId, entityLabels } = useAppContext();
+    const confirm = useConfirm();
     const [selectedAutomation, setSelectedAutomation] = useState<Automation | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [logs, setLogs] = useState<AutomationLog[]>([]);
@@ -583,7 +585,7 @@ export const AutomationsPage: React.FC<{ onNavigateToTab?: (tab: string) => void
                                         <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${auto.enabled !== false ? 'translate-x-4' : 'translate-x-0.5'}`} />
                                     </button>
                                     <button onClick={() => openEdit(auto)} className="text-primary hover:underline">ערוך</button>
-                                    <button onClick={() => deleteAutomation(auto.id)} className="text-red-600 hover:underline">מחק</button>
+                                    <button onClick={async () => { if (await confirm({ title: 'מחיקת אוטומציה', message: <>האם אתה בטוח שברצונך למחוק את האוטומציה <strong>"{auto.name}"</strong>?</> })) deleteAutomation(auto.id); }} className="text-red-600 hover:underline">מחק</button>
                                 </div>
                             </li>
                         ))}

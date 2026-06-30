@@ -7,6 +7,7 @@ import { uploadFile } from '../utils/apiClient';
 import { doc, getDoc } from 'firebase/firestore';
 import { UserAvatar } from './UserAvatar';
 import { useAppContext } from '../context/AppContext';
+import { useConfirm } from './ConfirmDialog';
 import { MessageSquare, ArrowUpDown, ClipboardCheck, Calendar, FileText, User, ArrowLeft, ArrowRight, Pencil, Trash2, MoveRight, X, Paperclip, Send, Clock } from 'lucide-react';
 
 interface CommentsProps {
@@ -218,6 +219,7 @@ const TimelineRow: React.FC<{
 
 const Comments: React.FC<CommentsProps> = ({ client, setClient }) => {
   const { meetings, documents, canUploadFile, incrementFileCount, plan, effectiveUserId } = useAppContext();
+  const confirm = useConfirm();
 
   const [newComment, setNewComment] = useState('');
   const [editingComment, setEditingComment] = useState<Comment | null>(null);
@@ -402,8 +404,10 @@ const Comments: React.FC<CommentsProps> = ({ client, setClient }) => {
     setEditingComment(null);
   };
 
-  const handleDeleteComment = (commentId: string) => {
-    setClient({ ...client, comments: (client.comments || []).filter(c => c.id !== commentId) });
+  const handleDeleteComment = async (commentId: string) => {
+    if (await confirm({ title: 'מחיקת תגובה', message: 'האם אתה בטוח שברצונך למחוק תגובה זו?' })) {
+      setClient({ ...client, comments: (client.comments || []).filter(c => c.id !== commentId) });
+    }
   };
 
   // ── Render ───────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import { Plus, Check, X, Calendar, Clock, Pencil, Trash2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { Client, Meeting } from '../types';
 import { auth } from '../firebaseConfig';
+import { useConfirm } from './ConfirmDialog';
 
 interface ClientMeetingsTabProps {
     client: Client | null;
@@ -11,6 +12,7 @@ interface ClientMeetingsTabProps {
 
 export const ClientMeetingsTab: React.FC<ClientMeetingsTabProps> = ({ client, prefill }) => {
     const { meetings, addMeeting, updateMeeting, deleteMeeting, entityLabels } = useAppContext();
+    const confirm = useConfirm();
     const [isAdding, setIsAdding] = useState(false);
 
     // Add form state
@@ -240,8 +242,8 @@ export const ClientMeetingsTab: React.FC<ClientMeetingsTabProps> = ({ client, pr
                                             <button type="button" onClick={() => handleEditStart(meeting)} className="text-blue-500 hover:text-blue-600 p-1.5 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors" title="ערוך פגישה">
                                                 <Pencil className="w-4 h-4" />
                                             </button>
-                                            <button type="button" onClick={() => {
-                                                if (window.confirm('האם אתה בטוח שברצונך למחוק פגישה זו? יוביל למחיקתה גם ביומן גוגל אם מקושר.')) {
+                                            <button type="button" onClick={async () => {
+                                                if (await confirm({ title: 'מחיקת פגישה', message: 'האם אתה בטוח שברצונך למחוק פגישה זו? יוביל למחיקתה גם ביומן גוגל אם מקושר.' })) {
                                                     deleteMeeting(meeting.id);
                                                 }
                                             }} className="text-red-500 hover:text-red-600 p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="מחק פגישה">

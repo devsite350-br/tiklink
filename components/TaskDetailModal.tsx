@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from './Modal';
+import { useConfirm } from './ConfirmDialog';
 import { Task, Subtask, CrmDocument, CustomFieldType, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { uploadFile } from '../utils/apiClient';
@@ -30,6 +31,7 @@ interface TaskDetailModalProps {
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClose, task, clients, clientId, onClientChange, onSave, userId }) => {
     const { entityLabels, addDocument, documents, clients: allClients, customFields } = useAppContext();
+    const confirm = useConfirm();
     const [text, setText] = useState(task.text);
     const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
     const [dueDate, setDueDate] = useState<string>(task.dueDate || '');
@@ -135,7 +137,9 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
         setSubtasks(subtasks.map(s => s.id === id ? { ...s, text: newText } : s));
     };
 
-    const handleDeleteSubtask = (id: string) => {
+    const handleDeleteSubtask = async (id: string) => {
+        const sub = subtasks.find(s => s.id === id);
+        if (!await confirm({ title: 'מחיקת פריט', message: sub?.text ? <>האם אתה בטוח שברצונך למחוק את הפריט <strong>"{sub.text}"</strong>?</> : 'האם אתה בטוח שברצונך למחוק פריט זה?' })) return;
         setSubtasks(subtasks.filter(s => s.id !== id));
     };
 
@@ -227,7 +231,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
 
     const handleRevokeShare = async () => {
         if (shareBusy) return;
-        if (!window.confirm('האם לבטל את קישור השיתוף? הקישור יפסיק לעבוד.')) return;
+        if (!await confirm({ title: 'ביטול קישור שיתוף', message: 'האם לבטל את קישור השיתוף? הקישור יפסיק לעבוד.', confirmText: 'בטל קישור' })) return;
         const prevToken = shareToken;
         setShareToken(undefined);
         setShareBusy(true);

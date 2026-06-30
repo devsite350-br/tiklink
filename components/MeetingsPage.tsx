@@ -3,9 +3,11 @@ import { useAppContext } from '../context/AppContext';
 import { Client, Meeting } from '../types';
 import { ChevronRight, X, Search, Calendar, Check, Clock, Pencil, Trash2, List, Columns3 } from 'lucide-react';
 import { MeetingKanbanBoard } from './MeetingKanbanBoard';
+import { useConfirm } from './ConfirmDialog';
 
 export const MeetingsPage: React.FC<{ onClientClick: (client: Client) => void }> = ({ onClientClick }) => {
     const { meetings, clients, updateMeeting, deleteMeeting, entityLabels } = useAppContext();
+    const confirm = useConfirm();
 
     const [viewMode, setViewMode] = useState<'list' | 'kanban'>(() => {
         const saved = localStorage.getItem('meetingsViewMode');
@@ -349,8 +351,8 @@ export const MeetingsPage: React.FC<{ onClientClick: (client: Client) => void }>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <button onClick={() => handleEditStart(meeting)} className="text-blue-500 hover:text-blue-600 p-1.5"><Pencil className="w-5 h-5" /></button>
-                                                <button onClick={() => {
-                                                    if (window.confirm('האם אתה בטוח שברצונך למחוק פגישה זו? יוביל למחיקתה גם ביומן גוגל אם מקושר.')) {
+                                                <button onClick={async () => {
+                                                    if (await confirm({ title: 'מחיקת פגישה', message: 'האם אתה בטוח שברצונך למחוק פגישה זו? יוביל למחיקתה גם ביומן גוגל אם מקושר.' })) {
                                                         deleteMeeting(meeting.id);
                                                     }
                                                 }} className="text-red-500 hover:text-red-700 p-1.5" title="מחק פגישה">

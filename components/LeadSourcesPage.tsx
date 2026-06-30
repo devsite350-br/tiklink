@@ -4,9 +4,11 @@ import { useAppContext } from '../context/AppContext';
 import { LeadSource } from '../types';
 import { webhookUrl } from '../utils/apiClient';
 import { Plus, Link, Trash2, UserPlus, Check, Copy, Shuffle, X, CheckSquare } from 'lucide-react';
+import { useConfirm } from './ConfirmDialog';
 
 export const LeadSourcesPage: React.FC = () => {
     const { leadSources, addLeadSource, updateLeadSource, deleteLeadSource, userId, customFields, entityLabels } = useAppContext();
+    const confirm = useConfirm();
     const [newSourceName, setNewSourceName] = useState('');
     const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
@@ -17,8 +19,8 @@ export const LeadSourcesPage: React.FC = () => {
         }
     };
 
-    const handleDeleteSource = (id: string) => {
-        if (window.confirm('האם אתה בטוח שברצונך למחוק מקור הגעה זה?')) {
+    const handleDeleteSource = async (id: string) => {
+        if (await confirm({ message: 'האם אתה בטוח שברצונך למחוק מקור הגעה זה?' })) {
             deleteLeadSource(id);
         }
     };

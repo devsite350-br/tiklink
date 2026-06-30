@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../utils/apiClient';
+import { useConfirm } from './ConfirmDialog';
 
 export const MeetingsSettings: React.FC = () => {
     const { connectedCalendars, deleteConnectedCalendar, visibilitySettings, updateVisibilitySettings, entityLabels } = useAppContext();
+    const confirm = useConfirm();
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -141,8 +143,8 @@ export const MeetingsSettings: React.FC = () => {
                                 </div>
                             </div>
                             <button
-                                onClick={() => {
-                                    if (window.confirm('האם אתה בטוח שברצונך לנתק חשבון זה?')) {
+                                onClick={async () => {
+                                    if (await confirm({ title: 'ניתוק יומן', message: 'האם אתה בטוח שברצונך לנתק חשבון זה?', confirmText: 'נתק' })) {
                                         deleteConnectedCalendar(calendar.id);
                                     }
                                 }}

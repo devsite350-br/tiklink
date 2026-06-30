@@ -3,6 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { db } from '../firebaseConfig';
 import { collection, onSnapshot, doc, deleteDoc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { UserAvatar } from './UserAvatar';
+import { useConfirm } from './ConfirmDialog';
 
 interface TeamMemberLocal {
     id: string;
@@ -14,6 +15,7 @@ interface TeamMemberLocal {
 
 export const TeamSettings: React.FC = () => {
     const { userId, isOwner, organizationId } = useAppContext();
+    const confirm = useConfirm();
     const [members, setMembers] = useState<TeamMemberLocal[]>([]);
     const [loading, setLoading] = useState(false);
     const [copySuccess, setCopySuccess] = useState('');
@@ -64,7 +66,7 @@ export const TeamSettings: React.FC = () => {
     }, [userId, isOwner]);
 
     const generateNewToken = async () => {
-        if (!confirm('האם אתה בטוח? יצירת קישור חדש תבטל את הקישור הישן ואנשים לא יוכלו להצטרף איתו.')) return;
+        if (!await confirm({ title: 'יצירת קישור חדש', message: 'האם אתה בטוח? יצירת קישור חדש תבטל את הקישור הישן ואנשים לא יוכלו להצטרף איתו.', confirmText: 'צור קישור חדש' })) return;
         setLoadingToken(true);
         const newToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
         try {
@@ -78,7 +80,7 @@ export const TeamSettings: React.FC = () => {
     };
 
     const removeMember = async (memberId: string) => {
-        if (!confirm('האם אתה בטוח שברצונך להסיר משתמש זה מהצוות?')) return;
+        if (!await confirm({ title: 'הסרת משתמש', message: 'האם אתה בטוח שברצונך להסיר משתמש זה מהצוות?', confirmText: 'הסר' })) return;
         try {
             // 1. Remove from owner's team_members
             await deleteDoc(doc(db, 'users', userId, 'team_members', memberId));
@@ -107,7 +109,7 @@ export const TeamSettings: React.FC = () => {
     };
 
     const leaveTeam = async () => {
-        if (!confirm('האם אתה בטוח שברצונך לעזוב את הצוות?')) return;
+        if (!await confirm({ title: 'עזיבת צוות', message: 'האם אתה בטוח שברצונך לעזוב את הצוות?', confirmText: 'עזוב' })) return;
         try {
             await updateDoc(doc(db, 'users', userId), {
                 organizationId: null

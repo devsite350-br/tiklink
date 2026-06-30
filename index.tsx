@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { ConfirmProvider } from './components/ConfirmDialog';
 
 // Capture PWA install prompt as early as possible — before React mounts
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -18,6 +19,8 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <ConfirmProvider>
+      <App />
+    </ConfirmProvider>
   </React.StrictMode>
 );

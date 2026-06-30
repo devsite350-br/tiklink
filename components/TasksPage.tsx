@@ -8,6 +8,7 @@ import { TaskDetailModal } from './TaskDetailModal';
 import { BulkTaskModal } from './BulkTaskModal';
 import { ChevronRight, ArrowDownNarrowWide, ArrowUpNarrowWide, Calendar, ChevronDown, ChevronUp, ClipboardCheck, Filter, Search, Plus, ListChecks, ExternalLink, Check, X, Pencil, Trash2, List, Columns3, SortDesc, SortAsc } from 'lucide-react';
 import { TaskKanbanBoard } from './TaskKanbanBoard';
+import { useConfirm } from './ConfirmDialog';
 
 interface TasksPageProps {
     onClientClick: (client: Client) => void;
@@ -21,6 +22,7 @@ const generateId = () => {
 
 export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSidebarOpen, onCloseMobileSidebar }) => {
     const { clients, updateClient, effectiveUserId, entityLabels } = useAppContext();
+    const confirm = useConfirm();
     const clientsRef = useRef<Client[]>(clients);
 
     useEffect(() => {
@@ -421,6 +423,8 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
     const handleDeleteTask = async (clientId: string, taskId: string) => {
         const client = clientsRef.current.find(c => c.id === clientId);
         if (!client) return;
+        const taskToDelete = client.tasks.find(t => t.id === taskId);
+        if (!await confirm({ title: 'מחיקת משימה', message: taskToDelete?.text ? <>האם אתה בטוח שברצונך למחוק את המשימה <strong>"{taskToDelete.text}"</strong>?</> : 'האם אתה בטוח שברצונך למחוק משימה זו?' })) return;
         const updatedTasks = client.tasks.filter(t => t.id !== taskId);
         const updatedClient = { ...client, tasks: updatedTasks };
         clientsRef.current = clientsRef.current.map(c => c.id === clientId ? updatedClient : c);

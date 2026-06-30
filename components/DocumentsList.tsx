@@ -6,6 +6,7 @@ import { Client, CrmDocument, CustomFieldType, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_
 import { DocumentEditor } from './DocumentEditor';
 import { DocumentShareButtons } from './DocumentShareButtons';
 import { uploadFile } from '../utils/apiClient';
+import { useConfirm } from './ConfirmDialog';
 
 interface DocumentsListProps {
     client: Client;
@@ -56,6 +57,7 @@ const timeAgo = (timestamp: number) => {
 
 export const DocumentsList: React.FC<DocumentsListProps> = ({ client }) => {
     const { documents, addDocument, deleteDocument, documentTemplates, userId, customFields } = useAppContext();
+    const confirm = useConfirm();
     const [isEditorOpen, setEditorOpen] = useState(false);
     const [editingDoc, setEditingDoc] = useState<CrmDocument | null>(null);
     const [showCreateMenu, setShowCreateMenu] = useState(false);
@@ -110,7 +112,7 @@ export const DocumentsList: React.FC<DocumentsListProps> = ({ client }) => {
     };
 
     const handleDelete = async (docId: string) => {
-        if (window.confirm('האם אתה בטוח שברצונך למחוק מסמך זה?')) {
+        if (await confirm({ message: 'האם אתה בטוח שברצונך למחוק מסמך זה?' })) {
             await deleteDocument(docId);
         }
     };
