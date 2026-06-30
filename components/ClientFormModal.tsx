@@ -170,7 +170,7 @@ const TaskManager: React.FC<{
 
     return (
         <div className="space-y-4">
-            <div className="flex flex-col gap-2">
+            <div className="flex gap-2 items-center">
                 <textarea
                     ref={newTaskTextareaRef}
                     value={newTaskText}
@@ -179,19 +179,10 @@ const TaskManager: React.FC<{
                     onFocus={e => autoResizeTextarea(e.target)}
                     placeholder="הוסף משימה חדשה..."
                     rows={1}
-                    className="w-full px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none transition-all shadow-sm resize-none overflow-hidden"
+                    className="flex-1 min-w-0 px-4 py-2.5 bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none transition-all shadow-sm resize-none overflow-hidden"
                 />
-                <div className="flex gap-2 flex-wrap items-center">
-                    <input
-                        type="datetime-local"
-                        value={newTaskDueDate}
-                        onChange={e => setNewTaskDueDate(e.target.value)}
-                        className="px-3 py-2.5 min-h-[46px] text-sm bg-gray-50/50 dark:bg-base-950/50 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-primary/50 outline-none transition-all"
-                        title="תאריך ושעה"
-                    />
-                    <button type="button" onClick={handleAddTask} className="px-4 py-2.5 min-h-[46px] rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">הוסף</button>
-                    <button type="button" onClick={() => setBulkModalOpen(true)} className="px-4 py-2.5 min-h-[46px] rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition-all font-medium">רשימה</button>
-                </div>
+                <button type="button" onClick={handleAddTask} className="shrink-0 px-4 py-2.5 min-h-[46px] rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">הוסף</button>
+                <button type="button" onClick={() => setBulkModalOpen(true)} className="shrink-0 px-4 py-2.5 min-h-[46px] rounded-xl bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/10 transition-all font-medium">רשימה</button>
             </div>
             <ul className="space-y-2 pr-2">
                 {sortedTasks.map(task => {

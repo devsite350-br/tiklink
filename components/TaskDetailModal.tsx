@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from './Modal';
 import { useConfirm } from './ConfirmDialog';
-import { Task, Subtask, CrmDocument, CustomFieldType, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
+import { Task, Subtask, TaskPriority, CrmDocument, CustomFieldType, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
 import { useAppContext } from '../context/AppContext';
 import { uploadFile } from '../utils/apiClient';
 import { X, ChevronDown, Link, Paperclip, Download, Mail } from 'lucide-react';
@@ -30,11 +30,13 @@ interface TaskDetailModalProps {
 }
 
 export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClose, task, clients, clientId, onClientChange, onSave, userId }) => {
-    const { entityLabels, addDocument, documents, clients: allClients, customFields } = useAppContext();
+    const { entityLabels, addDocument, documents, clients: allClients, customFields, taskKanbanColumns } = useAppContext();
     const confirm = useConfirm();
     const [text, setText] = useState(task.text);
     const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks || []);
     const [dueDate, setDueDate] = useState<string>(task.dueDate || '');
+    const [priority, setPriority] = useState<TaskPriority>(task.priority || 'medium');
+    const [isCompleted, setIsCompleted] = useState<boolean>(task.isCompleted);
     const [shareToken, setShareToken] = useState<string | undefined>(task.shareToken);
     const [newSubtaskText, setNewSubtaskText] = useState('');
     const [showShareCopied, setShowShareCopied] = useState(false);
@@ -52,6 +54,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
         setText(task.text);
         setSubtasks(task.subtasks || []);
         setDueDate(task.dueDate || '');
+        setPriority(task.priority || 'medium');
+        setIsCompleted(task.isCompleted);
         setShareToken(task.shareToken);
         clientChangedRef.current = false;
     }, [task.id]);
@@ -93,6 +97,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
         const t = taskRef.current;
         if ((text.trim() || t.text) !== t.text) return true;
         if ((dueDate || '') !== (t.dueDate || '')) return true;
+        if ((t.priority || 'medium') !== priority) return true;
+        if ((t.isCompleted || false) !== isCompleted) return true;
         if (shareToken !== t.shareToken) return true;
         const currentSubKey = subtasks.map(s => `${s.id}:${s.isCompleted ? 1 : 0}:${s.text}`).join('|');
         const taskSubKey = (t.subtasks || []).map(s => `${s.id}:${s.isCompleted ? 1 : 0}:${s.text}`).join('|');
@@ -108,6 +114,8 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
             text: text.trim() || taskRef.current.text,
             subtasks: subtasks.length > 0 ? subtasks : undefined,
             dueDate: dueDate || undefined,
+            priority,
+            isCompleted,
             shareToken,
         };
         clientChangedRef.current = false;
@@ -119,7 +127,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
         debounceTimer.current = setTimeout(flushSave, 400);
         return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
-    }, [text, subtasks, dueDate, shareToken]);
+    }, [text, subtasks, dueDate, priority, isCompleted, shareToken]);
 
     const isChecklist = subtasks.length > 0;
 
@@ -415,6 +423,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                     </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Client (if applicable) */}
                 {clients && clientId !== undefined && onClientChange && (
                     <div ref={clientDropdownRef}>
@@ -461,6 +470,24 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                     </div>
                 )}
 
+                {/* Column (priority / done) */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">עמודה</label>
+                    <select
+                        value={isCompleted ? 'done' : priority}
+                        onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === 'done') { setIsCompleted(true); }
+                            else { setIsCompleted(false); setPriority(v as TaskPriority); }
+                        }}
+                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-primary dark:bg-base-800 dark:border-gray-600 outline-none"
+                    >
+                        {taskKanbanColumns.map(col => (
+                            <option key={col.id} value={col.id}>{col.name}</option>
+                        ))}
+                    </select>
+                </div>
+
                 {/* Due Date */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">תאריך ושעה</label>
@@ -470,6 +497,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                         onChange={(e) => setDueDate(e.target.value)}
                         className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-primary dark:bg-base-800 dark:border-gray-600 outline-none"
                     />
+                </div>
                 </div>
 
                 {/* Share Link - only for checklist tasks */}

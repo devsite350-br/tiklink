@@ -21,7 +21,7 @@ const generateId = () => {
 };
 
 export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSidebarOpen, onCloseMobileSidebar }) => {
-    const { clients, updateClient, effectiveUserId, entityLabels } = useAppContext();
+    const { clients, updateClient, effectiveUserId, entityLabels, taskKanbanColumns } = useAppContext();
     const confirm = useConfirm();
     const clientsRef = useRef<Client[]>(clients);
 
@@ -51,6 +51,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
     const [newTaskText, setNewTaskText] = useState('');
     const [newTaskClientId, setNewTaskClientId] = useState<string>('');
     const [newTaskDueDate, setNewTaskDueDate] = useState<string>('');
+    const [newTaskColumn, setNewTaskColumn] = useState<string>('medium');
     const [detailTask, setDetailTask] = useState<{ taskId: string; originalClientId: string; currentClientId: string } | null>(null);
 
     // Live lookup: always reflects the latest task from the realtime clients context
@@ -337,8 +338,8 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                 const newTask: Task = {
                     id: generateId(),
                     text: newTaskText.trim(),
-                    isCompleted: false,
-                    priority: 'medium',
+                    isCompleted: newTaskColumn === 'done',
+                    priority: (newTaskColumn === 'done' ? 'medium' : newTaskColumn) as TaskPriority,
                     dueDate: newTaskDueDate || undefined,
                     createdAt: Date.now()
                 };
@@ -357,6 +358,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                 console.log("Client updated successfully.");
                 setNewTaskText('');
                 setNewTaskDueDate('');
+                setNewTaskColumn('medium');
                 setAddModalOpen(false);
             } else {
                 console.warn("Could not find client to add task to");
@@ -1267,6 +1269,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                             autoFocus
                         />
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div ref={newTaskClientDropdownRef}>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{entityLabels.assignTo}</label>
                         <div className="relative">
@@ -1328,6 +1331,18 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                         </div>
                     </div>
                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">עמודה</label>
+                        <select
+                            value={newTaskColumn}
+                            onChange={(e) => setNewTaskColumn(e.target.value)}
+                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-primary dark:bg-base-800 dark:border-gray-600 outline-none"
+                        >
+                            {taskKanbanColumns.map(col => (
+                                <option key={col.id} value={col.id}>{col.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">תאריך ושעה</label>
                         <input
                             type="datetime-local"
@@ -1335,6 +1350,7 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                             onChange={(e) => setNewTaskDueDate(e.target.value)}
                             className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-primary dark:bg-base-800 dark:border-gray-600"
                         />
+                    </div>
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
                         <button type="button" onClick={() => setAddModalOpen(false)} className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg">ביטול</button>
