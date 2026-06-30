@@ -6,6 +6,7 @@ import LinkifiedContent from './LinkifiedContent';
 import { Modal } from './Modal';
 import { TaskDetailModal } from './TaskDetailModal';
 import { BulkTaskModal } from './BulkTaskModal';
+import { ColumnSelect } from './ColumnSelect';
 import { ChevronRight, ArrowDownNarrowWide, ArrowUpNarrowWide, Calendar, ChevronDown, ChevronUp, ClipboardCheck, Filter, Search, Plus, ListChecks, ExternalLink, Check, X, Pencil, Trash2, List, Columns3, SortDesc, SortAsc } from 'lucide-react';
 import { TaskKanbanBoard } from './TaskKanbanBoard';
 import { useConfirm } from './ConfirmDialog';
@@ -1332,15 +1333,11 @@ export const TasksPage: React.FC<TasksPageProps> = ({ onClientClick, isMobileSid
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">עמודה</label>
-                        <select
+                        <ColumnSelect
+                            columns={taskKanbanColumns}
                             value={newTaskColumn}
-                            onChange={(e) => setNewTaskColumn(e.target.value)}
-                            className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-primary dark:bg-base-800 dark:border-gray-600 outline-none"
-                        >
-                            {taskKanbanColumns.map(col => (
-                                <option key={col.id} value={col.id}>{col.name}</option>
-                            ))}
-                        </select>
+                            onChange={setNewTaskColumn}
+                        />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">תאריך ושעה</label>

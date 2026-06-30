@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Modal } from './Modal';
+import { ColumnSelect } from './ColumnSelect';
 import { useConfirm } from './ConfirmDialog';
 import { Task, Subtask, TaskPriority, CrmDocument, CustomFieldType, ALLOWED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, MAX_FILES_PER_SUBTASK } from '../types';
 import { useAppContext } from '../context/AppContext';
@@ -473,19 +474,14 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ isOpen, onClos
                 {/* Column (priority / done) */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">עמודה</label>
-                    <select
+                    <ColumnSelect
+                        columns={taskKanbanColumns}
                         value={isCompleted ? 'done' : priority}
-                        onChange={(e) => {
-                            const v = e.target.value;
+                        onChange={(v) => {
                             if (v === 'done') { setIsCompleted(true); }
                             else { setIsCompleted(false); setPriority(v as TaskPriority); }
                         }}
-                        className="w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-primary dark:bg-base-800 dark:border-gray-600 outline-none"
-                    >
-                        {taskKanbanColumns.map(col => (
-                            <option key={col.id} value={col.id}>{col.name}</option>
-                        ))}
-                    </select>
+                    />
                 </div>
 
                 {/* Due Date */}
