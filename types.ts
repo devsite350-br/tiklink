@@ -262,6 +262,17 @@ export const SYSTEM_FIELD_DEFINITIONS: SystemFieldDefinition[] = [
 export const isSystemFieldId = (id: string): boolean =>
   SYSTEM_FIELD_DEFINITIONS.some(sf => sf.id === id);
 
+// System fields that must NOT be offered as lead-source mapping targets:
+// __name is already covered by the dedicated 'name' target; __createdAt is
+// stamped by the system; __notes is the catch-all that collects every unmapped
+// param as KEY=VALUE. The remaining system fields (__status, __labels,
+// __sourceId, __assignedTo) are mappable — the inbound webhook resolves them by
+// exact-name match against the corresponding list (statuses/labels/sources/team).
+export const NON_MAPPABLE_SYSTEM_FIELD_IDS = ['__name', '__createdAt', '__notes'];
+
+export const isMappableField = (id: string): boolean =>
+  !NON_MAPPABLE_SYSTEM_FIELD_IDS.includes(id);
+
 // Resolves the label to show for a field. System fields fall back to their
 // canonical Hebrew name, but a user-set name (persisted on the customFields
 // doc via the field-management screen) overrides it.

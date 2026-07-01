@@ -47,12 +47,16 @@ export default withErrorHandling(async (req: VercelRequest, res: VercelResponse)
   const definedFields = customFieldsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
   const additions: string[] = [];
 
+  // Load reference lists only for the system fields that are actually mapped, so
+  // mapped values can be resolved by exact-name match (see resolveSystemField).
+  const mappedFieldIds = new Set(mappings.map((m: any) => m.fieldId).filter(Boolean));
+  const refs = await loadMappingRefs(userRef, userId, mappedFieldIds);
+
   for (const [key, value] of Object.entries(otherParams)) {
     if (key === 'notes') continue;
-    const mapping = mappings.find((m: any) => m.key === key);
+    const mapping = mappings.find((m: any) => m.key === key && m.fieldId);
     if (mapping) {
-      if (mapping.fieldId === 'name') clientData.name = value;
-      else clientData.customFields[mapping.fieldId] = value;
+      resolveSystemField(clientData, mapping.fieldId, value, refs);
       continue;
     }
     const matchingField = definedFields.find((f: any) => f.name.toLowerCase() === key.toLowerCase() || f.id === key);
@@ -85,6 +89,97 @@ export default withErrorHandling(async (req: VercelRequest, res: VercelResponse)
 
   res.status(200).send('Lead added successfully');
 });
+
+// Reference lists used to resolve mapped system fields by exact name. Each list
+// is only loaded when its system field is actually referenced by a mapping.
+// (Mirrors NON_MAPPABLE_SYSTEM_FIELD_IDS in ../../types.ts: __name/__createdAt/
+// __notes are never offered as targets, so they are not resolved here.)
+interface MappingRefs {
+  statuses: { name: string }[];
+  labels: { id: string; name: string }[];
+  sources: { id: string; name: string }[];
+  members: { id: string; name: string; email: string }[];
+}
+
+async function loadMappingRefs(
+  userRef: FirebaseFirestore.DocumentReference,
+  userId: string,
+  mappedFieldIds: Set<string>,
+): Promise<MappingRefs> {
+  const refs: MappingRefs = { statuses: [], labels: [], sources: [], members: [] };
+
+  if (mappedFieldIds.has('__status')) {
+    const snap = await userRef.collection('statuses').get();
+    refs.statuses = snap.docs.map(d => ({ name: d.data().name }));
+  }
+  if (mappedFieldIds.has('__labels')) {
+    const snap = await userRef.collection('labels').where('module', '==', 'client').get();
+    refs.labels = snap.docs.map(d => ({ id: d.id, name: d.data().name }));
+  }
+  if (mappedFieldIds.has('__sourceId')) {
+    const snap = await userRef.collection('leadSources').get();
+    refs.sources = snap.docs.map(d => ({ id: d.id, name: d.data().name }));
+  }
+  if (mappedFieldIds.has('__assignedTo')) {
+    const snap = await userRef.collection('team_members').get();
+    for (const d of snap.docs) {
+      const data = d.data();
+      let name = data.displayName || (data.email ? String(data.email).split('@')[0] : '');
+      try {
+        const profile = await adminDb.collection('users').doc(d.id).get();
+        if (profile.exists) name = profile.data()?.displayName || name;
+      } catch { /* ignore */ }
+      refs.members.push({ id: d.id, name, email: data.email || '' });
+    }
+    try {
+      const owner = (await userRef.get()).data();
+      if (owner) refs.members.push({ id: userId, name: owner.displayName || '', email: owner.email || '' });
+    } catch { /* ignore */ }
+  }
+
+  return refs;
+}
+
+// Apply a single mapped value to the client. System fields resolve by exact-name
+// match against their reference list; a value that matches nothing is ignored
+// (never dumped into customFields). Everything else is a real custom field.
+function resolveSystemField(clientData: any, fieldId: string, value: string, refs: MappingRefs) {
+  const v = (value ?? '').trim();
+  switch (fieldId) {
+    case 'name':
+    case '__name':
+      clientData.name = value;
+      return;
+    case '__status': {
+      const match = refs.statuses.find(s => (s.name || '').trim() === v);
+      if (match) clientData.status = match.name;
+      return;
+    }
+    case '__labels': {
+      const match = refs.labels.find(l => (l.name || '').trim() === v);
+      if (match && !clientData.labelIds.includes(match.id)) clientData.labelIds.push(match.id);
+      return;
+    }
+    case '__sourceId': {
+      const match = refs.sources.find(s => (s.name || '').trim() === v);
+      if (match) clientData.sourceId = match.id;
+      return;
+    }
+    case '__assignedTo': {
+      const match = refs.members.find(
+        m => (m.email || '').trim().toLowerCase() === v.toLowerCase() || (m.name || '').trim() === v,
+      );
+      if (match) clientData.assignedTo = match.id;
+      return;
+    }
+    case '__createdAt':
+    case '__notes':
+      // System-managed / catch-all fields — never set via mapping.
+      return;
+    default:
+      clientData.customFields[fieldId] = value;
+  }
+}
 
 async function enrichLeadWithAI(
   userId: string,

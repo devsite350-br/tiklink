@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { LeadSource } from '../types';
+import { LeadSource, isMappableField } from '../types';
 import { webhookUrl } from '../utils/apiClient';
 import { Plus, Link, Trash2, UserPlus, Check, Copy, Shuffle, X, CheckSquare } from 'lucide-react';
 import { useConfirm } from './ConfirmDialog';
@@ -66,9 +66,12 @@ export const LeadSourcesPage: React.FC = () => {
         setTimeout(() => setCopiedUrl(null), 2000);
     };
 
+    // System fields that are auto-managed or act as a catch-all (creation date,
+    // additional details, and the duplicate name field) are excluded — only
+    // fields that can actually be set from an incoming param are offered.
     const availableFields = [
         { id: 'name', name: entityLabels.nameOf },
-        ...customFields.map(f => ({ id: f.id, name: f.name }))
+        ...customFields.filter(f => isMappableField(f.id)).map(f => ({ id: f.id, name: f.name }))
     ];
 
     return (
