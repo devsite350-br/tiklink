@@ -288,6 +288,7 @@ export interface Client {
   labelIds?: string[];
   sourceId?: string; // ID of the lead source
   aiSummary?: string; // AI generated summary
+  aiSummaryUpdatedAt?: number; // Timestamp of the last manual AI summary refresh
   assignedTo?: string; // User ID of the assigned team member
 }
 

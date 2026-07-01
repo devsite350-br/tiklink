@@ -16,6 +16,7 @@ import { ClientWhatsAppTab } from './ClientWhatsAppTab';
 import { useConfirm } from './ConfirmDialog';
 import { DocumentsList } from './DocumentsList';
 import LinkifiedContent from './LinkifiedContent';
+import { api } from '../utils/apiClient';
 
 interface ClientFormModalProps {
     isOpen: boolean;
@@ -360,6 +361,8 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
     const confirm = useConfirm();
     const [activeTab, setActiveTab] = useState<'details' | 'tasks' | 'ai' | 'meetings' | 'documents' | 'whatsapp'>('details');
     const [aiEnabled, setAiEnabled] = useState(false);
+    const [summarizing, setSummarizing] = useState(false);
+    const [summaryError, setSummaryError] = useState<string | null>(null);
     const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
     const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -590,6 +593,23 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
     };
 
     const aiStatus = getAIStatus();
+
+    const handleGenerateSummary = async () => {
+        if (!clientToEdit || summarizing) return;
+        setSummarizing(true);
+        setSummaryError(null);
+        try {
+            const res = await api<{ aiSummary: string; aiSummaryUpdatedAt: number }>(
+                'ai/settings',
+                { action: 'summarize', ownerUid: effectiveUserId, clientId: clientToEdit.id },
+            );
+            setClientData(p => ({ ...p, aiSummary: res.aiSummary, aiSummaryUpdatedAt: res.aiSummaryUpdatedAt }));
+        } catch (e: any) {
+            setSummaryError(e?.message || 'שגיאה ביצירת הסיכום. נסה שוב.');
+        } finally {
+            setSummarizing(false);
+        }
+    };
 
     const handleAssigneeChange = (newAssigneeId: string) => {
         const user = auth.currentUser;
@@ -918,7 +938,7 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
                                         {aiStatus === 'completed' ? 'סיכום ותובנות שנוצרו באמצעות AI' :
                                             aiStatus === 'processing' ? `המערכת מנתחת את פרטי ${entityLabels.theSingular} כעת` :
                                                 aiStatus === 'skipped' ? 'הגדרות AI כבויות או חסר מפתח' :
-                                                    'עיבוד AI פעיל רק עבור רשומות ממקור חיצוני'}
+                                                    'עיבוד AI אוטומטי פעיל עבור רשומות ממקור חיצוני'}
                                     </p>
                                 </div>
                             </div>
@@ -928,6 +948,11 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
                                     <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
                                         {clientData.aiSummary}
                                     </p>
+                                    {clientData.aiSummaryUpdatedAt && (
+                                        <p className="mt-2 text-xs text-gray-400 dark:text-gray-500 not-prose">
+                                            עודכן לאחרונה: {new Date(clientData.aiSummaryUpdatedAt).toLocaleString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="text-sm text-gray-500 italic p-4 bg-white/50 dark:bg-black/20 rounded-lg border border-gray-100 dark:border-white/5">
@@ -936,6 +961,26 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
                                 </div>
                             )}
                         </div>
+
+                        {/* Manual on-demand AI summary — only on an existing card */}
+                        {clientToEdit && (
+                            <div className="space-y-3">
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateSummary}
+                                    disabled={summarizing}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:scale-[1.02] active:scale-95 transition-all font-medium disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100"
+                                >
+                                    <Sparkles className={`w-4 h-4 ${summarizing ? 'animate-pulse' : ''}`} />
+                                    {summarizing ? 'מסכם...' : clientData.aiSummary ? 'רענן סיכום ב-AI' : 'צור סיכום ב-AI'}
+                                </button>
+                                {summaryError && (
+                                    <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-500/20 rounded-lg px-4 py-2">
+                                        {summaryError}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         {/* Debug Logs Visibility */}
                         {(aiStatus === 'error' || aiStatus === 'skipped') && (
